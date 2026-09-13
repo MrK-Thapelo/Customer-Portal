@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Identification Module</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-900 text-white min-h-screen p-8">
+    <div class="max-w-4xl mx-auto bg-gray-800 rounded-xl overflow-hidden shadow-2xl border border-gray-700">
+        <div class="p-4 border-b border-gray-700 bg-gray-850 flex justify-between items-center">
+            <h1 class="font-mono text-lg">LIVE_FEED: ENTRY_POINT_01</h1>
+            <span class="text-red-500 animate-pulse font-bold text-xs">● REC 1080p 30FPS</span>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-0">
+            <div class="relative bg-black h-80 flex items-center justify-center border-r border-gray-700">
+                <div class="absolute inset-0 opacity-40 bg-[url('https://images.unsplash.com/photo-1506521781263-d8422e82f27a?auto=format&fit=crop&q=80&w=600')] bg-cover"></div>
+                <div class="relative z-10 border-2 border-green-500 w-48 h-32 flex flex-col items-center justify-center">
+                    <span class="bg-green-500 text-black text-[10px] px-1 absolute -top-4 left-0">VEHICLE_DETECTED</span>
+                </div>
+            </div>
+
+            <div class="p-6 space-y-6">
+                <div>
+                    <h3 class="text-gray-400 text-xs font-bold mb-2 uppercase">License Plate Recognition</h3>
+                    <div class="bg-gray-900 p-3 rounded border border-gray-600">
+                        <p class="text-2xl tracking-widest font-bold">ABC 1234</p>
+                        <p class="text-xs text-green-400 mt-1">Confidence: 98%</p>
+                    </div>
+                </div>
+
+                <div>
+                    <h3 class="text-gray-400 text-xs font-bold mb-2 uppercase">Facial Recognition</h3>
+                    <div class="flex items-center space-x-3 bg-gray-900 p-3 rounded border border-gray-600">
+                        <div class="w-12 h-12 bg-gray-700 rounded"></div>
+                        <div>
+                            <p class="text-sm font-bold">User: John Doe</p>
+                            <p class="text-xs text-green-400">Confidence: 96%</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex space-x-2 pt-4">
+                    <button class="flex-1 bg-green-700 hover:bg-green-600 py-2 rounded text-sm font-bold uppercase">Approve</button>
+                    <button class="flex-1 bg-yellow-700 hover:bg-yellow-600 py-2 rounded text-sm font-bold uppercase">Flag Review</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

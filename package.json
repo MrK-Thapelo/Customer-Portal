@@ -1,0 +1,15 @@
+{
+  "name": "ai-parking-system",
+  "version": "1.0.0",
+  "description": "AI Assisted Parking Monitoring System",
+  "scripts": {
+    "postinstall": "npm --prefix db install",
+    "start": "npm --prefix db start",
+    "dev": "npm --prefix db run dev",
+    "init-db": "npm --prefix db run init-db",
+    "activate-session": "npm --prefix db run activate-session"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}

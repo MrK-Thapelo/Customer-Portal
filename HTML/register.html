@@ -1,0 +1,1006 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register - AI Parking System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../CSS/register.css">
+    <style>
+        :root {
+            --bg: #0d0f14;
+            --surface: #161a22;
+            --surface2: #1e2330;
+            --border: #2a3040;
+            --accent: #4f8ef7;
+            --accent2: #7c3aed;
+            --text: #e8eaf0;
+            --muted: #6b7280;
+            --success: #10b981;
+            --error: #ef4444;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'DM Sans', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem 1rem;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: -30%;
+            left: -20%;
+            width: 60%;
+            height: 60%;
+            background: radial-gradient(ellipse, rgba(79,142,247,0.12) 0%, transparent 70%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        body::after {
+            content: '';
+            position: fixed;
+            bottom: -20%;
+            right: -10%;
+            width: 50%;
+            height: 50%;
+            background: radial-gradient(ellipse, rgba(124,58,237,0.10) 0%, transparent 70%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .register-wrapper {
+            width: 100%;
+            max-width: 560px;
+            position: relative;
+            z-index: 1;
+            animation: fadeUp 0.6s ease both;
+        }
+
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(24px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        .register-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 2.5rem 2.5rem 2rem;
+            box-shadow: 0 32px 64px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.04) inset;
+        }
+
+        .register-header {
+            text-align: center;
+            margin-bottom: 2.2rem;
+        }
+
+        .logo-mark {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 56px;
+            height: 56px;
+            background: linear-gradient(135deg, var(--accent), var(--accent2));
+            border-radius: 16px;
+            font-size: 1.6rem;
+            margin-bottom: 1rem;
+            box-shadow: 0 8px 24px rgba(79,142,247,0.35);
+        }
+
+        h1 {
+            font-family: 'Syne', sans-serif;
+            font-size: 1.75rem;
+            font-weight: 800;
+            letter-spacing: -0.03em;
+            color: var(--text);
+        }
+
+        .subtitle {
+            color: var(--muted);
+            font-size: 0.9rem;
+            margin-top: 0.35rem;
+        }
+
+        /* Section dividers */
+        .section-label {
+            font-family: 'Syne', sans-serif;
+            font-size: 0.72rem;
+            font-weight: 700;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--accent);
+            margin: 1.8rem 0 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+        }
+
+        .section-label::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--border);
+        }
+
+        /* Form grid */
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+        }
+
+        label {
+            font-size: 0.82rem;
+            font-weight: 500;
+            color: #9ca3af;
+            letter-spacing: 0.01em;
+        }
+
+        input[type="text"],
+        input[type="email"],
+        input[type="tel"],
+        input[type="password"] {
+            width: 100%;
+            padding: 0.65rem 0.9rem;
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            color: var(--text);
+            font-family: 'DM Sans', sans-serif;
+            font-size: 0.9rem;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            outline: none;
+        }
+
+        input[type="text"]::placeholder,
+        input[type="email"]::placeholder,
+        input[type="tel"]::placeholder,
+        input[type="password"]::placeholder {
+            color: #3d4655;
+        }
+
+        input:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(79,142,247,0.15);
+        }
+
+        input.error-field {
+            border-color: var(--error);
+            box-shadow: 0 0 0 3px rgba(239,68,68,0.12);
+        }
+
+        /* Photo upload */
+        .photo-upload-area {
+            border: 2px dashed var(--border);
+            border-radius: 14px;
+            padding: 1.5rem;
+            text-align: center;
+            cursor: pointer;
+            transition: border-color 0.25s, background 0.25s;
+            background: var(--surface2);
+            position: relative;
+        }
+
+        .photo-upload-area:hover {
+            border-color: var(--accent);
+            background: rgba(79,142,247,0.05);
+        }
+
+        .photo-upload-area.drag-over {
+            border-color: var(--accent);
+            background: rgba(79,142,247,0.1);
+        }
+
+        .photo-preview-container {
+            display: none;
+            position: relative;
+            width: 100px;
+            height: 100px;
+            margin: 0 auto 0.8rem;
+        }
+
+        .photo-preview-container.visible { display: block; }
+
+        .photo-preview-container img {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 3px solid var(--accent);
+        }
+
+        .remove-photo-btn {
+            position: absolute;
+            top: -4px;
+            right: -4px;
+            width: 24px;
+            height: 24px;
+            background: var(--error);
+            border: none;
+            border-radius: 50%;
+            color: white;
+            font-size: 0.75rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            line-height: 1;
+        }
+
+        .upload-icon {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+            display: block;
+            opacity: 0.5;
+        }
+
+        .upload-text {
+            font-size: 0.85rem;
+            color: var(--muted);
+            margin-bottom: 0.8rem;
+        }
+
+        .upload-actions {
+            display: flex;
+            gap: 0.6rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .upload-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            padding: 0.45rem 0.9rem;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            font-family: 'DM Sans', sans-serif;
+            font-weight: 500;
+            cursor: pointer;
+            border: 1px solid var(--border);
+            background: var(--surface);
+            color: var(--text);
+            transition: all 0.2s;
+        }
+
+        .upload-btn:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+            background: rgba(79,142,247,0.08);
+        }
+
+        .upload-btn.camera-btn {
+            border-color: rgba(16,185,129,0.4);
+            color: var(--success);
+            background: rgba(16,185,129,0.06);
+        }
+
+        .upload-btn.camera-btn:hover {
+            border-color: var(--success);
+            background: rgba(16,185,129,0.12);
+        }
+
+        /* Camera modal */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.75);
+            z-index: 100;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(4px);
+        }
+
+        .modal-overlay.active { display: flex; }
+
+        .camera-modal {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            padding: 1.5rem;
+            width: 100%;
+            max-width: 420px;
+            animation: scaleIn 0.25s ease;
+        }
+
+        @keyframes scaleIn {
+            from { transform: scale(0.92); opacity: 0; }
+            to   { transform: scale(1); opacity: 1; }
+        }
+
+        .camera-modal h3 {
+            font-family: 'Syne', sans-serif;
+            font-size: 1.1rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        video {
+            width: 100%;
+            border-radius: 12px;
+            background: #000;
+            display: block;
+        }
+
+        .camera-controls {
+            display: flex;
+            gap: 0.75rem;
+            margin-top: 1rem;
+            justify-content: center;
+        }
+
+        .btn-capture {
+            padding: 0.6rem 1.4rem;
+            background: linear-gradient(135deg, var(--accent), var(--accent2));
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-family: 'Syne', sans-serif;
+            font-weight: 700;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+
+        .btn-capture:hover { opacity: 0.85; }
+
+        .btn-cancel-cam {
+            padding: 0.6rem 1.2rem;
+            background: transparent;
+            color: var(--muted);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            font-family: 'DM Sans', sans-serif;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-cancel-cam:hover {
+            border-color: var(--error);
+            color: var(--error);
+        }
+
+        /* Checkbox */
+        .terms-row {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.83rem;
+            color: var(--muted);
+            margin-top: 1rem;
+        }
+
+        .terms-row input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            accent-color: var(--accent);
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+
+        .terms-row a {
+            color: var(--accent);
+            text-decoration: none;
+        }
+
+        .terms-row a:hover { text-decoration: underline; }
+
+        /* Submit */
+        .btn-submit {
+            width: 100%;
+            padding: 0.85rem;
+            margin-top: 1.6rem;
+            background: linear-gradient(135deg, var(--accent) 0%, var(--accent2) 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-family: 'Syne', sans-serif;
+            font-weight: 700;
+            font-size: 1rem;
+            letter-spacing: 0.02em;
+            cursor: pointer;
+            transition: opacity 0.2s, transform 0.15s;
+            box-shadow: 0 8px 20px rgba(79,142,247,0.3);
+        }
+
+        .btn-submit:hover { opacity: 0.9; transform: translateY(-1px); }
+        .btn-submit:active { transform: translateY(0); }
+
+        /* Error messages */
+        .error-msg {
+            font-size: 0.78rem;
+            color: var(--error);
+            margin-top: 0.25rem;
+            display: none;
+        }
+
+        .error-msg.visible { display: block; }
+
+        /* Footer */
+        .signin-link {
+            text-align: center;
+            margin-top: 1.5rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid var(--border);
+            font-size: 0.85rem;
+            color: var(--muted);
+        }
+
+        .signin-link a {
+            color: var(--accent);
+            font-weight: 600;
+            text-decoration: none;
+        }
+
+        .signin-link a:hover { text-decoration: underline; }
+
+        /* Responsive */
+        @media (max-width: 520px) {
+            .register-card { padding: 2rem 1.5rem; }
+            .form-row { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Camera Modal -->
+    <div class="modal-overlay" id="cameraModal">
+        <div class="camera-modal">
+            <h3>📷 Take a Photo</h3>
+            <video id="cameraFeed" autoplay playsinline></video>
+            <canvas id="captureCanvas" style="display:none;"></canvas>
+            <div class="camera-controls">
+                <button class="btn-capture" id="captureBtn">Capture</button>
+                <button class="btn-cancel-cam" id="closeCameraBtn">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="register-wrapper">
+        <div class="register-card">
+
+            <div class="register-header">
+                <div class="logo-mark">🅿️</div>
+                <h1>Create Account</h1>
+                <p class="subtitle">Join the AI Parking System</p>
+            </div>
+
+            <form id="registration-form" novalidate>
+
+                <!-- Personal Info -->
+                <div class="section-label">Personal Information</div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="firstName">First Name</label>
+                        <input type="text" id="firstName" name="firstName"  required>
+                        <span class="error-msg" id="firstNameError">First name is required.</span>
+                    </div>
+                    <div class="form-group">
+                        <label for="lastName">Last Name</label>
+                        <input type="text" id="lastName" name="lastName"  required>
+                        <span class="error-msg" id="lastNameError">Last name is required.</span>
+                    </div>
+                </div>
+
+                <div class="form-group" style="margin-top:1rem;">
+                    <label for="email">Email Address</label>
+                    <input type="email" id="email" name="email"  required>
+                    <span class="error-msg" id="emailError">Please enter a valid email address.</span>
+                </div>
+
+                <div class="form-group" style="margin-top:1rem;">
+                    <label for="mobileNumber">Mobile Number</label>
+                    <input type="tel" id="mobileNumber" name="mobileNumber"  required>
+                    <span class="error-msg" id="mobileError">Mobile number is required.</span>
+                </div>
+
+                <!-- Vehicle Info -->
+                <div class="section-label">Vehicle Information</div>
+
+                <div class="form-group">
+                    <label for="carRegistration">Car Registration Number</label>
+                    <input type="text" id="carRegistration" name="carRegistration"  required style="text-transform:uppercase;">
+                    <span class="error-msg" id="carRegError">Car registration number is required.</span>
+                </div>
+
+                <!-- Profile Photo -->
+                <div class="section-label">Profile Photo</div>
+
+                <div class="photo-upload-area" id="uploadArea">
+                    <div class="photo-preview-container" id="previewContainer">
+                        <img id="photoPreview" src="" alt="Preview">
+                        <button type="button" class="remove-photo-btn" id="removePhotoBtn" title="Remove photo">✕</button>
+                    </div>
+                    <span class="upload-icon" id="uploadIcon">🖼️</span>
+                    <p class="upload-text" id="uploadText">Upload a profile photo (optional)</p>
+                    <div class="upload-actions">
+                        <button type="button" class="upload-btn camera-btn" id="openCameraBtn">
+                            📷 Use Camera
+                        </button>
+                        <label class="upload-btn" for="fileInput" style="cursor:pointer;">
+                            📁 Choose File
+                        </label>
+                        <input type="file" id="fileInput" name="profilePhoto" accept="image/*" style="display:none;">
+                    </div>
+                </div>
+
+                <!-- Security -->
+                <div class="section-label">Security</div>
+
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <div style="position:relative;">
+                        <input type="password" id="password" name="password" required style="padding-right:2.75rem;">
+                        <button type="button" onclick="togglePassVisibility('password', 'togglePassIcon1')" aria-label="Toggle password visibility" style="position:absolute; right:0.75rem; top:50%; transform:translateY(-50%); background:none; border:none; color:#6b7280; cursor:pointer; font-size:0.9rem;">
+                            <i id="togglePassIcon1" class="fas fa-eye"></i>
+                        </button>
+                    </div>
+                    <span class="error-msg" id="passwordError">Password must be at least 8 characters.</span>
+                    
+                    <!-- Dynamic Password Strength Bar -->
+                    <div class="mt-2.5" id="passwordStrengthContainer" style="display:none;">
+                        <div class="flex items-center justify-between mb-1.5">
+                            <span class="text-[11px] text-gray-400 font-medium">Password Strength:</span>
+                            <span id="strengthLabel" class="text-[11px] font-bold text-gray-400">Too Short</span>
+                        </div>
+                        <div class="grid grid-cols-4 gap-1.5 h-1.5 w-full bg-[#1e2330] rounded-full p-0.5 overflow-hidden">
+                            <div id="strengthBar1" class="h-full rounded-full transition-all duration-300 bg-gray-700"></div>
+                            <div id="strengthBar2" class="h-full rounded-full transition-all duration-300 bg-gray-700"></div>
+                            <div id="strengthBar3" class="h-full rounded-full transition-all duration-300 bg-gray-700"></div>
+                            <div id="strengthBar4" class="h-full rounded-full transition-all duration-300 bg-gray-700"></div>
+                        </div>
+                        <p id="strengthHint" class="text-[11px] text-gray-500 mt-1 transition-colors">Must include 8+ chars, uppercase, lowercase, and numbers</p>
+                    </div>
+                </div>
+
+                <div class="form-group" style="margin-top:1rem;">
+                    <label for="confirmPassword">Confirm Password</label>
+                    <div style="position:relative;">
+                        <input type="password" id="confirmPassword" name="confirmPassword" required style="padding-right:2.75rem;">
+                        <button type="button" onclick="togglePassVisibility('confirmPassword', 'togglePassIcon2')" aria-label="Toggle confirm password visibility" style="position:absolute; right:0.75rem; top:50%; transform:translateY(-50%); background:none; border:none; color:#6b7280; cursor:pointer; font-size:0.9rem;">
+                            <i id="togglePassIcon2" class="fas fa-eye"></i>
+                        </button>
+                    </div>
+                    <span class="error-msg" id="confirmPasswordError">Passwords do not match.</span>
+                    <div id="confirmMatchIndicator" class="text-[11px] mt-1 font-medium transition-all duration-200" style="display:none;"></div>
+                </div>
+
+                <div class="terms-row">
+                    <input type="checkbox" id="terms" required>
+                    <label for="terms">I agree to the <a href="#" onclick="event.preventDefault(); showToast('Terms: Parking monitored via automated AI plate capture.', 'info');">terms and conditions</a></label>
+                </div>
+
+                <div id="registerAlert" class="hidden mb-4 p-3.5 rounded-xl text-sm font-medium"></div>
+
+                <button type="submit" class="btn-submit" id="submitBtn">
+                    <span>Create Account →</span>
+                </button>
+
+            </form>
+
+            <div class="signin-link">
+                Already have an account? <a href="login.html">Sign In</a>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // ── Photo upload via file input ──────────────────────────────────
+        const fileInput       = document.getElementById('fileInput');
+        const photoPreview    = document.getElementById('photoPreview');
+        const previewContainer= document.getElementById('previewContainer');
+        const uploadIcon      = document.getElementById('uploadIcon');
+        const uploadText      = document.getElementById('uploadText');
+        const removePhotoBtn  = document.getElementById('removePhotoBtn');
+        const uploadArea      = document.getElementById('uploadArea');
+
+        function showPreview(src) {
+            photoPreview.src = src;
+            previewContainer.classList.add('visible');
+            uploadIcon.style.display = 'none';
+            uploadText.textContent = 'Photo selected ✓';
+        }
+
+        function clearPreview() {
+            photoPreview.src = '';
+            previewContainer.classList.remove('visible');
+            uploadIcon.style.display = 'block';
+            uploadText.textContent = 'Upload a profile photo (optional)';
+            fileInput.value = '';
+        }
+
+        fileInput.addEventListener('change', () => {
+            const file = fileInput.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = e => showPreview(e.target.result);
+            reader.readAsDataURL(file);
+        });
+
+        removePhotoBtn.addEventListener('click', e => {
+            e.stopPropagation();
+            clearPreview();
+        });
+
+        // Drag-and-drop
+        uploadArea.addEventListener('dragover', e => { e.preventDefault(); uploadArea.classList.add('drag-over'); });
+        uploadArea.addEventListener('dragleave', () => uploadArea.classList.remove('drag-over'));
+        uploadArea.addEventListener('drop', e => {
+            e.preventDefault();
+            uploadArea.classList.remove('drag-over');
+            const file = e.dataTransfer.files[0];
+            if (file && file.type.startsWith('image/')) {
+                const reader = new FileReader();
+                reader.onload = ev => showPreview(ev.target.result);
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // ── Camera ───────────────────────────────────────────────────────
+        const cameraModal  = document.getElementById('cameraModal');
+        const cameraFeed   = document.getElementById('cameraFeed');
+        const captureCanvas= document.getElementById('captureCanvas');
+        const captureBtn   = document.getElementById('captureBtn');
+        const openCameraBtn= document.getElementById('openCameraBtn');
+        const closeCameraBtn=document.getElementById('closeCameraBtn');
+        let cameraStream   = null;
+
+        openCameraBtn.addEventListener('click', async () => {
+            try {
+                cameraStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
+                cameraFeed.srcObject = cameraStream;
+                cameraModal.classList.add('active');
+            } catch (err) {
+                alert('Camera access denied or not available: ' + err.message);
+            }
+        });
+
+        function stopCamera() {
+            if (cameraStream) { cameraStream.getTracks().forEach(t => t.stop()); cameraStream = null; }
+            cameraModal.classList.remove('active');
+        }
+
+        closeCameraBtn.addEventListener('click', stopCamera);
+
+        captureBtn.addEventListener('click', () => {
+            captureCanvas.width  = cameraFeed.videoWidth;
+            captureCanvas.height = cameraFeed.videoHeight;
+            captureCanvas.getContext('2d').drawImage(cameraFeed, 0, 0);
+            const dataUrl = captureCanvas.toDataURL('image/png');
+            showPreview(dataUrl);
+            stopCamera();
+        });
+
+        // ── Form validation & Live Feedback ──────────────────────────────
+        function showError(id, msg) {
+            const el = document.getElementById(id);
+            if (msg) { el.textContent = msg; el.classList.add('visible'); }
+            else      { el.classList.remove('visible'); }
+        }
+
+        function markField(id, valid) {
+            const el = document.getElementById(id);
+            if (el) el.classList.toggle('error-field', !valid);
+        }
+
+        // ── Real-time Password Strength & Match ──────────────────────────
+        const passwordInput = document.getElementById('password');
+        const confirmPasswordInput = document.getElementById('confirmPassword');
+        const strengthContainer = document.getElementById('passwordStrengthContainer');
+        const strengthLabel = document.getElementById('strengthLabel');
+        const strengthHint = document.getElementById('strengthHint');
+        const confirmMatchIndicator = document.getElementById('confirmMatchIndicator');
+        const bars = [
+            document.getElementById('strengthBar1'),
+            document.getElementById('strengthBar2'),
+            document.getElementById('strengthBar3'),
+            document.getElementById('strengthBar4')
+        ];
+
+        function assessPasswordStrength(pass) {
+            if (!pass) return { score: 0, label: 'Too Short', color: '#374151', textClass: 'text-gray-400', hint: 'Must include 8+ chars, uppercase, lowercase, and numbers' };
+            let score = 0;
+            if (pass.length >= 8) score++;
+            if (/[a-z]/.test(pass) && /[A-Z]/.test(pass)) score++;
+            if (/\d/.test(pass)) score++;
+            if (/[^A-Za-z0-9]/.test(pass) || pass.length >= 12) score++;
+
+            switch (score) {
+                case 1:
+                    return { score: 1, label: 'Weak', color: '#ef4444', textClass: 'text-red-400', hint: 'Add uppercase letters, numbers or symbols' };
+                case 2:
+                    return { score: 2, label: 'Fair', color: '#f59e0b', textClass: 'text-amber-400', hint: 'Add symbols and numbers for extra strength' };
+                case 3:
+                    return { score: 3, label: 'Good', color: '#3b82f6', textClass: 'text-blue-400', hint: 'Almost there! Consider 12+ chars or a symbol' };
+                case 4:
+                    return { score: 4, label: 'Strong', color: '#10b981', textClass: 'text-emerald-400', hint: 'Excellent password strength!' };
+                default:
+                    return { score: 0, label: 'Too Short', color: '#374151', textClass: 'text-gray-400', hint: 'Must include 8+ chars, uppercase, lowercase, and numbers' };
+            }
+        }
+
+        if (passwordInput) {
+            passwordInput.addEventListener('input', () => {
+                const val = passwordInput.value;
+                if (val.length === 0) {
+                    if (strengthContainer) strengthContainer.style.display = 'none';
+                } else {
+                    if (strengthContainer) strengthContainer.style.display = 'block';
+                    const result = assessPasswordStrength(val);
+                    if (strengthLabel) {
+                        strengthLabel.textContent = result.label;
+                        strengthLabel.className = `text-[11px] font-bold ${result.textClass || 'text-gray-400'}`;
+                    }
+                    if (strengthHint) strengthHint.textContent = result.hint;
+
+                    bars.forEach((bar, idx) => {
+                        if (bar) {
+                            if (idx < result.score) {
+                                bar.style.backgroundColor = result.color;
+                                bar.style.opacity = '1';
+                            } else {
+                                bar.style.backgroundColor = '#374151';
+                                bar.style.opacity = '0.4';
+                            }
+                        }
+                    });
+                }
+
+                if (val.length >= 8) {
+                    showError('passwordError', '');
+                    markField('password', true);
+                }
+
+                checkPasswordMatch();
+            });
+        }
+
+        function checkPasswordMatch() {
+            if (!passwordInput || !confirmPasswordInput || !confirmMatchIndicator) return;
+            const pass = passwordInput.value;
+            const conf = confirmPasswordInput.value;
+            if (!conf) {
+                confirmMatchIndicator.style.display = 'none';
+                showError('confirmPasswordError', '');
+                return;
+            }
+            confirmMatchIndicator.style.display = 'block';
+            if (pass === conf) {
+                confirmMatchIndicator.className = 'text-[11px] mt-1 font-semibold text-emerald-400 flex items-center gap-1';
+                confirmMatchIndicator.innerHTML = '<i class="fas fa-check-circle"></i> Passwords match';
+                showError('confirmPasswordError', '');
+                markField('confirmPassword', true);
+            } else {
+                confirmMatchIndicator.className = 'text-[11px] mt-1 font-semibold text-red-400 flex items-center gap-1';
+                confirmMatchIndicator.innerHTML = '<i class="fas fa-times-circle"></i> Passwords do not match';
+                markField('confirmPassword', false);
+            }
+        }
+
+        if (confirmPasswordInput) {
+            confirmPasswordInput.addEventListener('input', checkPasswordMatch);
+        }
+
+        // Live vehicle plate uppercase
+        const carRegInput = document.getElementById('carRegistration');
+        if (carRegInput) {
+            carRegInput.addEventListener('input', () => {
+                carRegInput.value = carRegInput.value.toUpperCase().replace(/[^A-Z0-9\s\-]/g, '');
+                if (carRegInput.value.trim().length > 0) {
+                    showError('carRegError', '');
+                    markField('carRegistration', true);
+                }
+            });
+        }
+
+        // Live email check
+        const emailInput = document.getElementById('email');
+        if (emailInput) {
+            emailInput.addEventListener('input', () => {
+                const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailInput.value.trim());
+                if (emailOk) {
+                    showError('emailError', '');
+                    markField('email', true);
+                }
+            });
+        }
+
+        // Live mobile check
+        const mobileInput = document.getElementById('mobileNumber');
+        if (mobileInput) {
+            mobileInput.addEventListener('input', () => {
+                if (mobileInput.value.trim().length >= 7) {
+                    showError('mobileError', '');
+                    markField('mobileNumber', true);
+                }
+            });
+        }
+
+        document.getElementById('registration-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            let valid = true;
+
+            const firstName = document.getElementById('firstName').value.trim();
+            const lastName  = document.getElementById('lastName').value.trim();
+            const email     = document.getElementById('email').value.trim();
+            const mobile    = document.getElementById('mobileNumber').value.trim();
+            const carReg    = document.getElementById('carRegistration').value.trim();
+            const password  = document.getElementById('password').value;
+            const confirm   = document.getElementById('confirmPassword').value;
+            const terms     = document.getElementById('terms').checked;
+
+            // First name
+            if (!firstName) { showError('firstNameError', 'First name is required.'); markField('firstName', false); valid = false; }
+            else             { showError('firstNameError', ''); markField('firstName', true); }
+
+            // Last name
+            if (!lastName)  { showError('lastNameError', 'Last name is required.'); markField('lastName', false); valid = false; }
+            else             { showError('lastNameError', ''); markField('lastName', true); }
+
+            // Email
+            const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+            if (!emailOk)   { showError('emailError', 'Please enter a valid email address.'); markField('email', false); valid = false; }
+            else             { showError('emailError', ''); markField('email', true); }
+
+            // Mobile
+            if (!mobile)    { showError('mobileError', 'Mobile number is required.'); markField('mobileNumber', false); valid = false; }
+            else             { showError('mobileError', ''); markField('mobileNumber', true); }
+
+            // Car reg
+            if (!carReg)    { showError('carRegError', 'Car registration number is required.'); markField('carRegistration', false); valid = false; }
+            else             { showError('carRegError', ''); markField('carRegistration', true); }
+
+            // Password
+            if (password.length < 8) { showError('passwordError', 'Password must be at least 8 characters.'); markField('password', false); valid = false; }
+            else                      { showError('passwordError', ''); markField('password', true); }
+
+            // Confirm password
+            if (password !== confirm) { showError('confirmPasswordError', 'Passwords do not match.'); markField('confirmPassword', false); valid = false; }
+            else                       { showError('confirmPasswordError', ''); markField('confirmPassword', true); }
+
+            if (!terms) { 
+                showRegisterMessage('Please accept the terms and conditions to continue.', 'error');
+                if (typeof window.showToast === 'function') {
+                    window.showToast('Please accept terms & conditions', 'warning');
+                }
+                valid = false; 
+            }
+
+            if (valid) {
+                const submitBtn = document.getElementById('submitBtn');
+                const originalBtnText = submitBtn ? submitBtn.innerHTML : 'Create Account →';
+
+                if (submitBtn) {
+                    submitBtn.disabled = true;
+                    submitBtn.innerHTML = `
+                        <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white inline-block" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" style="width:18px;height:18px;display:inline-block;vertical-align:middle;animation:spin 1s linear infinite;margin-right:8px;">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" style="opacity:0.25;"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" style="opacity:0.75;"></path>
+                        </svg>
+                        <span>Creating Account...</span>
+                    `;
+                }
+
+                showRegisterMessage('', 'clear');
+
+                const photoPreview = document.getElementById('photoPreview');
+                const profilePhoto = (photoPreview && photoPreview.src && photoPreview.src.startsWith('data:image/')) 
+                    ? photoPreview.src 
+                    : null;
+
+                const formData = {
+                    firstName,
+                    lastName,
+                    email,
+                    mobileNumber: mobile.replace(/[\s\-()]/g, ''),
+                    carRegistration: carReg,
+                    password,
+                    profilePhoto
+                };
+
+                fetch('/api/auth/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(formData)
+                })
+                .then(async response => {
+                    const data = await response.json();
+                    if (response.ok) {
+                        showRegisterMessage('Registration successful! Redirecting to sign in...', 'success');
+                        if (typeof window.showToast === 'function') {
+                            window.showToast('Account created successfully! Redirecting...', 'success');
+                        }
+                        setTimeout(() => {
+                            window.location.href = 'login.html';
+                        }, 1200);
+                    } else {
+                        const errMsg = data.message || data.error || (Array.isArray(data.errors) ? data.errors.map(e => e.msg).join(', ') : 'Registration failed. Please check your information.');
+                        showRegisterMessage(errMsg, 'error');
+                        if (typeof window.showToast === 'function') {
+                            window.showToast(errMsg, 'error');
+                        }
+                        if (submitBtn) {
+                            submitBtn.disabled = false;
+                            submitBtn.innerHTML = originalBtnText;
+                        }
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    const netMsg = 'Cannot connect to server. Please verify your connection.';
+                    showRegisterMessage(netMsg, 'error');
+                    if (typeof window.showToast === 'function') {
+                        window.showToast(netMsg, 'error');
+                    }
+                    if (submitBtn) {
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = originalBtnText;
+                    }
+                });
+            }
+        });
+
+        function showRegisterMessage(msg, type = 'error') {
+            const el = document.getElementById('registerAlert');
+            if (!el) return;
+            if (type === 'clear' || !msg) {
+                el.className = 'hidden mb-4 p-3.5 rounded-xl text-sm font-medium';
+                el.innerHTML = '';
+                return;
+            }
+            const isSuccess = type === 'success';
+            el.className = `block mb-4 p-3.5 rounded-xl text-xs sm:text-sm font-medium flex items-center gap-2 ${
+                isSuccess 
+                    ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30' 
+                    : 'bg-red-500/10 text-red-400 border border-red-500/30'
+            }`;
+            el.innerHTML = `
+                <i class="fas ${isSuccess ? 'fa-check-circle text-emerald-400' : 'fa-exclamation-circle text-red-400'} text-base flex-shrink-0"></i>
+                <span>${msg}</span>
+            `;
+        }
+
+        function togglePassVisibility(inputId, iconId) {
+            const input = document.getElementById(inputId);
+            const icon = document.getElementById(iconId);
+            if (!input || !icon) return;
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.className = 'fas fa-eye-slash';
+            } else {
+                input.type = 'password';
+                icon.className = 'fas fa-eye';
+            }
+        }
+    </script>
+    <script src="toast.js"></script>
+</body>
+</html>

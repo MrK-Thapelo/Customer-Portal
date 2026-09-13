@@ -1,0 +1,1185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Parking Customer Portal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .modal { 
+            display: none; 
+            position: fixed; 
+            z-index: 50; 
+            left: 0; 
+            top: 0; 
+            width: 100%; 
+            height: 100%; 
+            background-color: rgba(0,0,0,0.85); 
+            backdrop-filter: blur(8px); 
+            opacity: 0;
+            transition: opacity 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+            will-change: opacity;
+        }
+        .modal.active { 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            opacity: 1;
+        }
+        .modal-box {
+            transform: scale(0.95) translate3d(0, 10px, 0);
+            transition: transform 0.24s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.24s cubic-bezier(0.16, 1, 0.3, 1);
+            will-change: transform, opacity;
+            opacity: 0;
+        }
+        .modal.active .modal-box {
+            transform: scale(1) translate3d(0, 0, 0);
+            opacity: 1;
+        }
+        .section-view {
+            animation: sectionMount 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            will-change: transform, opacity;
+        }
+        @keyframes sectionMount {
+            from {
+                opacity: 0;
+                transform: translate3d(0, 8px, 0);
+            }
+            to {
+                opacity: 1;
+                transform: translate3d(0, 0, 0);
+            }
+        }
+        .price-card { transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1); background: #0d0f14; border: 1px solid #2a3040; will-change: transform; }
+        .price-card:hover { transform: translate3d(0, -4px, 0); border-color: #4f8ef7; }
+        .price-card:active { transform: translate3d(0, -1px, 0) scale(0.98); }
+        .price-card.selected { border-color: #4f8ef7; background-color: rgba(79,142,247,0.12); box-shadow: 0 0 20px -4px rgba(79,142,247,0.25); }
+        .tab-btn.active { background-color: #4f8ef7; color: white; }
+        .tabular-nums, .font-mono {
+            font-variant-numeric: tabular-nums;
+            font-feature-settings: "tnum";
+        }
+        html {
+            overflow-y: auto;
+            scroll-behavior: smooth;
+        }
+        body {
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        /* Custom Modern Dark Scrollbar */
+        ::-webkit-scrollbar {
+            width: 9px;
+            height: 9px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0d0f14;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #2a3040;
+            border-radius: 9999px;
+            border: 2px solid #0d0f14;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #4f8ef7;
+        }
+    </style>
+</head>
+<body class="bg-[#0d0f14] text-[#e8eaf0] font-sans min-h-screen flex flex-col">
+    <nav class="bg-[#161a22] border-b border-[#2a3040] text-white p-4 sticky top-0 z-40">
+        <div class="container mx-auto flex justify-between items-center">
+            <a href="#" onclick="showSection('dashboard')" class="flex items-center hover:opacity-80 transition group">
+                <h1 class="text-xl font-bold font-['Syne']"><i class="fas fa-parking mr-2 text-[#4f8ef7] group-hover:scale-110 transition-transform"></i>Customer Portal</h1>
+            </a>
+            <div class="space-x-5 hidden md:flex items-center">
+                <a href="#" onclick="showSection('dashboard')" class="text-sm font-medium hover:text-[#4f8ef7] transition flex items-center"><i class="fas fa-home mr-1.5"></i>Home</a>
+                <a href="#" onclick="showSection('payment')" class="text-sm font-medium hover:text-[#4f8ef7] transition">Make a Payment</a>
+                <a href="#" onclick="showSection('profile')" class="text-sm font-medium hover:text-[#4f8ef7] transition">Profile</a>
+                
+                <!-- Live Session Expiry Indicator & Quick Extend -->
+                <div id="sessionIndicatorBadge" class="flex items-center space-x-2 bg-[#1f2430] border border-[#2a3040] rounded-full px-3 py-1.5 text-xs text-gray-300">
+                    <span id="sessionStatusDot" class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                    <span class="text-gray-400 font-medium">Session:</span>
+                    <span id="navSessionCountdown" class="font-mono font-bold text-emerald-400">--:--</span>
+                    <button onclick="SessionManager.extendSession()" title="Extend session time" class="ml-1 text-gray-400 hover:text-[#4f8ef7] transition">
+                        <i class="fas fa-sync-alt text-[10px]"></i>
+                    </button>
+                </div>
+
+                <button onclick="logout()" class="bg-gradient-to-r from-[#4f8ef7] to-[#7c3aed] text-white px-4 py-2 rounded-xl font-bold hover:opacity-90 transition"><i class="fas fa-sign-out-alt mr-1"></i>Log Out</button>
+            </div>
+            <button class="md:hidden text-white text-xl" onclick="toggleMobileMenu()"><i class="fas fa-bars"></i></button>
+        </div>
+        <div id="mobileMenu" class="hidden md:hidden mt-4 p-3 bg-[#161a22] border border-[#2a3040] rounded-2xl space-y-2 shadow-2xl backdrop-blur-md">
+            <div class="flex items-center justify-between py-2 px-3 bg-[#1f2430] rounded-xl text-xs text-gray-300 border border-[#2a3040]">
+                <span class="text-gray-400">Session validity:</span>
+                <span id="navSessionCountdownMobile" class="font-mono font-bold text-emerald-400">--:--</span>
+                <button onclick="SessionManager.extendSession()" class="text-xs text-[#4f8ef7] font-semibold hover:underline">Extend</button>
+            </div>
+            <a href="#" onclick="showSection('dashboard'); toggleMobileMenu();" class="flex items-center gap-3 py-2.5 px-3 hover:bg-[#1f2430] rounded-xl text-sm font-medium transition text-gray-300 hover:text-white">
+                <i class="fas fa-home w-5 text-[#4f8ef7]"></i> Home
+            </a>
+            <a href="#" onclick="showSection('payment'); toggleMobileMenu();" class="flex items-center gap-3 py-2.5 px-3 hover:bg-[#1f2430] rounded-xl text-sm font-medium transition text-gray-300 hover:text-white">
+                <i class="fas fa-credit-card w-5 text-amber-400"></i> Make a Payment
+            </a>
+            <a href="#" onclick="showSection('profile'); toggleMobileMenu();" class="flex items-center gap-3 py-2.5 px-3 hover:bg-[#1f2430] rounded-xl text-sm font-medium transition text-gray-300 hover:text-white">
+                <i class="fas fa-user w-5 text-purple-400"></i> My Profile
+            </a>
+            <button onclick="logout()" class="w-full flex items-center justify-center gap-2 py-2.5 px-4 bg-gradient-to-r from-[#4f8ef7] to-[#7c3aed] text-white rounded-xl font-bold hover:opacity-95 transition mt-2 shadow-lg">
+                <i class="fas fa-sign-out-alt"></i> Log Out
+            </button>
+        </div>
+    </nav>
+
+    <!-- GLOBAL LOADING OVERLAY -->
+    <div id="portalLoadingOverlay" class="fixed inset-0 z-50 bg-[#0d0f14]/90 backdrop-blur-md flex flex-col items-center justify-center transition-all duration-300">
+        <div class="w-14 h-14 border-4 border-[#4f8ef7] border-t-transparent rounded-full animate-spin mb-4"></div>
+        <p class="text-white font-bold text-lg">Loading your account...</p>
+        <p class="text-[#6b7280] text-sm mt-1">Retrieving profile and session data from PostgreSQL</p>
+    </div>
+
+    <!-- GLOBAL ERROR BANNER -->
+    <div id="portalErrorBanner" class="hidden container mx-auto mt-6 px-4">
+        <div class="bg-red-500/10 border border-red-500/30 rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-4 text-red-400">
+            <div class="flex items-center space-x-3">
+                <i class="fas fa-exclamation-circle text-2xl text-red-400 flex-shrink-0"></i>
+                <div>
+                    <p class="font-bold text-sm" id="portalErrorMessage">Failed to load account data from server.</p>
+                    <p class="text-xs text-red-300/80">Please ensure you are connected and that your session is valid.</p>
+                </div>
+            </div>
+            <button onclick="fetchUserData()" class="bg-red-500 hover:bg-red-600 text-white px-5 py-2 rounded-xl text-xs font-bold transition flex items-center shadow-lg">
+                <i class="fas fa-sync-alt mr-1.5"></i>Retry
+            </button>
+        </div>
+    </div>
+
+    <!-- DASHBOARD SECTION -->
+    <section id="dashboard" class="container mx-auto mt-6 p-4 pb-28">
+        <!-- Welcome Greeting Banner -->
+        <div class="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-[#2a3040] pb-4">
+            <div>
+                <h1 class="text-2xl font-bold text-white flex items-center gap-2">
+                    Welcome back, <span id="welcomeUserName" class="text-[#4f8ef7]">User</span>!
+                </h1>
+                <p class="text-xs text-[#6b7280]">Manage your parking sessions, payments, and vehicle profile in real time.</p>
+            </div>
+            <div class="flex items-center gap-2">
+                <span id="roleBadge" class="bg-[#4f8ef7]/10 text-[#4f8ef7] border border-[#4f8ef7]/30 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider">Customer</span>
+                <span id="loyaltyBadge" class="bg-amber-500/10 text-amber-400 border border-amber-500/30 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider">Standard</span>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            
+            <!-- Current Parking Session -->
+            <div class="bg-[#161a22] p-6 rounded-[24px] border border-[#2a3040] shadow-xl flex flex-col justify-between">
+                <div>
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-[#6b7280] uppercase text-xs font-bold"><i class="fas fa-clock mr-1 text-[#4f8ef7]"></i>Current Session</h2>
+                        <span id="sessionBadge" class="bg-gray-500/10 text-gray-400 px-3 py-1 rounded-full text-xs font-bold border border-gray-500/20">
+                            <i class="fas fa-circle text-[8px] mr-1"></i>CHECKING...
+                        </span>
+                    </div>
+
+                    <p class="text-sm text-[#6b7280]">Location: <span class="font-semibold text-white" id="sessionLocation">---</span></p>
+                    <p class="text-sm text-[#6b7280] mt-1">License Plate: <span class="font-semibold text-white font-mono" id="sessionPlate">---</span></p>
+
+                    <div class="bg-[#0d0f14] rounded-xl p-4 my-4 border border-[#2a3040]">
+                        <p class="text-xs text-[#6b7280] uppercase font-bold mb-1">Session Status / Time Remaining</p>
+                        <p class="text-3xl font-mono font-bold text-[#4f8ef7]" id="remainingTime">--:--</p>
+                        <p class="text-[11px] text-[#6b7280] mt-1" id="sessionEntryTimeText">Entry: Not in active session</p>
+                    </div>
+                </div>
+
+                <button id="extendTimeBtn" onclick="openExtendModal()" class="w-full bg-gradient-to-r from-[#4f8ef7] to-[#7c3aed] text-white py-3 rounded-xl font-bold hover:opacity-90 transition disabled:opacity-50 disabled:cursor-not-allowed">
+                    <i class="fas fa-plus-circle mr-2"></i>Extend Time
+                </button>
+            </div>
+
+            <!-- Extended Time Summary (shown after extension) -->
+            <div id="extensionSummary" class="bg-[#161a22] p-6 rounded-[24px] border border-orange-500/30 shadow-xl hidden">
+                <h2 class="text-[#6b7280] uppercase text-xs font-bold mb-4"><i class="fas fa-receipt mr-1 text-orange-500"></i>Extension Summary</h2>
+                <div class="space-y-3">
+                    <div class="flex justify-between">
+                        <span class="text-sm text-[#6b7280]">Extended Hours:</span>
+                        <span class="font-bold text-white" id="extendedHours">--</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-sm text-[#6b7280]">Rate:</span>
+                        <span class="font-bold text-white" id="extendedRate">--</span>
+                    </div>
+                    <div class="border-t border-[#2a3040] pt-3 flex justify-between">
+                        <span class="text-sm text-[#6b7280] font-bold">Amount Charged:</span>
+                        <span class="font-bold text-2xl text-orange-600" id="extendedAmount">R0.00</span>
+                    </div>
+                </div>
+                <button onclick="showSection('payment')" class="w-full mt-4 bg-orange-600 text-white py-3 rounded-xl font-bold hover:bg-orange-700 transition"><i class="fas fa-credit-card mr-2"></i>Make a Payment</button>
+            </div>
+
+            <!-- Quick Stats -->
+            <div class="bg-[#161a22] p-6 rounded-[24px] border border-[#2a3040] flex flex-col justify-between shadow-xl">
+                <div>
+                    <h2 class="text-[#6b7280] uppercase text-xs font-bold mb-2"><i class="fas fa-gift mr-1 text-purple-500"></i>Free Parking Allowance</h2>
+                    <p class="text-4xl font-bold text-white"><span id="freeParkingDurationDisplay">--</span> <span class="text-lg text-[#6b7280]">Minutes Included</span></p>
+                    <p class="text-xs text-[#6b7280] mt-1">Per session daily free duration assigned to your account tier.</p>
+                </div>
+                <div class="mt-6 border-t border-[#2a3040] pt-4">
+                    <h2 class="text-[#6b7280] uppercase text-xs font-bold mb-2"><i class="fas fa-money-bill-wave mr-1 text-green-500"></i>Amount Due</h2>
+                    <p class="text-3xl font-bold text-white" id="amountDue">R0.00</p>
+                    <button onclick="showSection('payment')" class="w-full mt-2 bg-[#1e2330] border border-[#2a3040] text-white py-3 rounded-xl font-bold hover:bg-[#2a3040] transition"><i class="fas fa-credit-card mr-2"></i>Make Payment</button>
+                </div>
+            </div>
+
+            <!-- Profile Summary Card -->
+            <div class="bg-[#161a22] p-6 rounded-[24px] border border-[#2a3040] shadow-xl">
+                <div class="flex justify-between items-start mb-4">
+                    <h2 class="text-[#6b7280] uppercase text-xs font-bold"><i class="fas fa-user mr-1 text-[#4f8ef7]"></i>My Profile</h2>
+                    <button onclick="showSection('profile')" class="text-[#4f8ef7] text-xs font-bold hover:underline"><i class="fas fa-edit mr-1"></i>Edit Profile</button>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <div id="sidebarPhotoContainer" class="w-16 h-16 bg-gradient-to-br from-[#4f8ef7] to-[#7c3aed] rounded-full overflow-hidden flex items-center justify-center text-white text-2xl font-bold flex-shrink-0 shadow-lg">
+                        <span id="sidebarInitials">--</span>
+                    </div>
+                    <div class="overflow-hidden">
+                        <p class="font-bold text-base text-white truncate" id="profileNamePreview">Loading...</p>
+                        <p class="text-xs text-[#6b7280] truncate" id="profileEmailPreview">Loading email...</p>
+                        <p class="text-xs text-[#6b7280] truncate" id="profilePhonePreview">Loading phone...</p>
+                        <div class="mt-1 flex items-center gap-1.5">
+                            <span class="text-[10px] uppercase font-bold text-[#6b7280]">Plate:</span>
+                            <span class="text-xs font-mono font-bold text-[#4f8ef7] bg-[#4f8ef7]/10 px-2 py-0.5 rounded" id="profileCarRegistrationPreview">---</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- MAKE A PAYMENT SECTION (CONSOLIDATED STREAMLINED CHECKOUT) -->
+    <section id="payment" class="container mx-auto mt-6 p-4 pb-28 hidden">
+        <div class="max-w-4xl mx-auto">
+            <div class="bg-[#161a22] border border-[#2a3040] rounded-[32px] shadow-2xl p-6 sm:p-8">
+                
+                <!-- Section Header with Back Button -->
+                <div class="flex items-center justify-between border-b border-[#2a3040] pb-5 mb-6">
+                    <div class="flex items-center space-x-3">
+                        <button onclick="showSection('dashboard')" class="w-10 h-10 rounded-xl bg-[#1f2430] border border-[#2a3040] hover:border-[#4f8ef7] text-gray-300 hover:text-white transition flex items-center justify-center" title="Back to Dashboard">
+                            <i class="fas fa-chevron-left"></i>
+                        </button>
+                        <div>
+                            <h2 class="text-2xl font-bold font-syne text-white flex items-center gap-2">
+                                <i class="fas fa-credit-card text-[#4f8ef7]"></i> Streamlined Payment Checkout
+                            </h2>
+                            <p class="text-xs text-[#6b7280]">Review transaction breakdown and execute simulated contactless payment.</p>
+                        </div>
+                    </div>
+                    <span class="hidden sm:inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+                        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> Instant Clearance
+                    </span>
+                </div>
+
+                <!-- Transaction Summary Card -->
+                <div class="bg-[#0d0f14] border border-[#2a3040] rounded-2xl p-5 mb-6">
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 text-center sm:text-left">
+                        <div class="sm:border-r border-[#2a3040] pr-4">
+                            <span class="text-xs text-gray-400 block mb-1">Total Outstanding Due</span>
+                            <span class="text-3xl font-extrabold font-syne text-transparent bg-clip-text bg-gradient-to-r from-white via-white to-[#4f8ef7]" id="paymentAmount">R0.00</span>
+                        </div>
+                        <div class="sm:border-r border-[#2a3040] px-4">
+                            <span class="text-xs text-gray-400 block mb-1">Registered Vehicle</span>
+                            <span class="font-mono font-bold text-white text-lg" id="paymentLicensePlate">---</span>
+                        </div>
+                        <div class="pl-4">
+                            <span class="text-xs text-gray-400 block mb-1">Parking Bay & Facility</span>
+                            <span class="font-mono text-sm text-emerald-400 font-semibold" id="paymentLocationInfo">Zone B • Bay 14</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Payment Method Tabs -->
+                <div class="mb-6">
+                    <label class="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-3">Select Payment Method</label>
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                        <button type="button" onclick="selectPaymentMethod('card')" id="btnMethodCard" class="portal-method-btn p-3.5 rounded-xl border border-[#4f8ef7] bg-[#4f8ef7]/10 text-white font-bold text-xs flex flex-col items-center justify-center gap-1.5 transition">
+                            <i class="fas fa-credit-card text-base text-[#4f8ef7]"></i>
+                            <span>Credit Card</span>
+                        </button>
+                        <button type="button" onclick="selectPaymentMethod('capitec')" id="btnMethodCapitec" class="portal-method-btn p-3.5 rounded-xl border border-[#2a3040] bg-[#1f2430] hover:border-[#4f8ef7] text-gray-300 font-bold text-xs flex flex-col items-center justify-center gap-1.5 transition">
+                            <i class="fas fa-mobile-alt text-base text-red-400"></i>
+                            <span>Capitec Pay</span>
+                        </button>
+                        <button type="button" onclick="selectPaymentMethod('apple')" id="btnMethodApple" class="portal-method-btn p-3.5 rounded-xl border border-[#2a3040] bg-[#1f2430] hover:border-[#4f8ef7] text-gray-300 font-bold text-xs flex flex-col items-center justify-center gap-1.5 transition">
+                            <i class="fab fa-apple text-base text-white"></i>
+                            <span>Apple Pay</span>
+                        </button>
+                        <button type="button" onclick="selectPaymentMethod('qr')" id="btnMethodQr" class="portal-method-btn p-3.5 rounded-xl border border-[#2a3040] bg-[#1f2430] hover:border-[#4f8ef7] text-gray-300 font-bold text-xs flex flex-col items-center justify-center gap-1.5 transition">
+                            <i class="fas fa-qrcode text-base text-emerald-400"></i>
+                            <span>Dynamic QR</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- PAYMENT CHANNELS -->
+                <div class="bg-[#12151c] border border-[#2a3040] rounded-2xl p-6 mb-8">
+                    
+                    <!-- 1. Credit / Debit Card Form -->
+                    <form id="cardForm" onsubmit="handlePaymentSubmit(event, 'card')" class="space-y-4">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div class="sm:col-span-2">
+                                <label class="block text-xs font-bold uppercase text-gray-400 mb-1.5">Cardholder Full Name</label>
+                                <input type="text" id="cardName" placeholder="e.g., Collen Phasha" required class="w-full bg-[#0d0f14] border border-[#2a3040] rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#4f8ef7] text-sm">
+                            </div>
+                            <div class="sm:col-span-2">
+                                <label class="block text-xs font-bold uppercase text-gray-400 mb-1.5">Card Number</label>
+                                <div class="relative">
+                                    <input type="text" id="cardNumber" placeholder="4532 •••• •••• 8891" required class="w-full bg-[#0d0f14] border border-[#2a3040] rounded-xl px-4 py-3 text-white font-mono focus:outline-none focus:border-[#4f8ef7] text-sm">
+                                    <div class="absolute right-3 top-3 flex space-x-1.5 text-gray-400 text-sm">
+                                        <i class="fab fa-cc-visa"></i>
+                                        <i class="fab fa-cc-mastercard"></i>
+                                    </div>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold uppercase text-gray-400 mb-1.5">Expiry Date</label>
+                                <input type="text" id="cardExpiry" placeholder="MM/YY" required class="w-full bg-[#0d0f14] border border-[#2a3040] rounded-xl px-4 py-3 text-white font-mono focus:outline-none focus:border-[#4f8ef7] text-sm">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold uppercase text-gray-400 mb-1.5">CVV / CVC</label>
+                                <input type="password" id="cardCvv" placeholder="•••" maxlength="4" required class="w-full bg-[#0d0f14] border border-[#2a3040] rounded-xl px-4 py-3 text-white font-mono focus:outline-none focus:border-[#4f8ef7] text-sm">
+                            </div>
+                        </div>
+                        <button type="submit" class="w-full bg-gradient-to-r from-[#4f8ef7] to-[#7c3aed] text-white py-3.5 rounded-xl font-bold font-syne hover:opacity-90 transition shadow-lg flex items-center justify-center gap-2 mt-4">
+                            <i class="fas fa-lock text-xs"></i>
+                            <span>Pay <span class="btnAmountText">R0.00</span> Now</span>
+                        </button>
+                    </form>
+
+                    <!-- 2. Capitec Pay Form -->
+                    <form id="capitecForm" onsubmit="handlePaymentSubmit(event, 'capitec')" class="hidden space-y-4">
+                        <div class="bg-red-500/10 border border-red-500/20 rounded-xl p-3.5 flex items-center gap-3 mb-3">
+                            <div class="w-8 h-8 rounded-lg bg-red-500/20 flex items-center justify-center text-red-400 flex-shrink-0">
+                                <i class="fas fa-mobile-alt"></i>
+                            </div>
+                            <p class="text-xs text-red-200">Authenticate payment on your Capitec banking app instantly.</p>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold uppercase text-gray-400 mb-1.5">Registered Mobile Number / Identifier</label>
+                            <input type="tel" id="capitecNumber" placeholder="082 123 4567" required class="w-full bg-[#0d0f14] border border-[#2a3040] rounded-xl px-4 py-3 text-white font-mono focus:outline-none focus:border-red-500 text-sm">
+                        </div>
+                        <button type="submit" class="w-full bg-red-600 hover:bg-red-700 text-white py-3.5 rounded-xl font-bold font-syne transition shadow-lg flex items-center justify-center gap-2 mt-4">
+                            <i class="fas fa-check-circle"></i>
+                            <span>Authorize Capitec Pay (<span class="btnAmountText">R0.00</span>)</span>
+                        </button>
+                    </form>
+
+                    <!-- 3. Apple Pay Container -->
+                    <div id="applePayContainer" class="hidden text-center py-4 space-y-4">
+                        <p class="text-xs text-gray-400">One-touch biometric authorization using your Apple ID device wallet.</p>
+                        <button type="button" onclick="handlePaymentSubmit(event, 'apple')" class="w-full sm:w-auto px-10 py-3.5 rounded-xl bg-white text-black font-bold flex items-center justify-center gap-2 hover:bg-gray-100 transition shadow-xl mx-auto">
+                            <i class="fab fa-apple text-xl"></i>
+                            <span>Pay with Apple Pay (<span class="btnAmountText">R0.00</span>)</span>
+                        </button>
+                    </div>
+
+                    <!-- 4. Dynamic QR Code Pay Channel -->
+                    <div id="qrPayContainer" class="hidden text-center space-y-4">
+                        <p class="text-xs text-gray-400">Scan this single-use dynamic QR code with any banking app (FNB, Standard Bank, Capitec) or SnapScan to settle instantly.</p>
+                        
+                        <div class="relative inline-block mx-auto bg-white p-3.5 rounded-2xl shadow-xl">
+                            <div id="portalQrImageWrapper" class="w-48 h-48 flex items-center justify-center relative">
+                                <div id="portalQrLoadingSpinner" class="w-10 h-10 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
+                                <img id="portalQrImage" src="" alt="Dynamic Payment QR" class="w-48 h-48 hidden object-contain">
+                                
+                                <!-- Expired Overlay -->
+                                <div id="portalQrExpiredOverlay" class="hidden absolute inset-0 bg-black/85 backdrop-blur-sm rounded-xl flex flex-col items-center justify-center p-3 text-center">
+                                    <i class="fas fa-history text-amber-400 text-2xl mb-1.5"></i>
+                                    <span class="text-xs font-bold text-white mb-2">QR Code Expired</span>
+                                    <button type="button" onclick="loadPortalPaymentQr()" class="px-3 py-1.5 bg-[#4f8ef7] text-white text-xs font-bold rounded-lg hover:opacity-90 transition">
+                                        <i class="fas fa-redo mr-1"></i>Regenerate
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Timer & Pulse Indicator -->
+                        <div class="flex items-center justify-center space-x-3 text-xs">
+                            <span class="inline-flex items-center gap-1.5 text-gray-400">
+                                <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                                <span id="portalQrStatusText">Waiting for mobile payment...</span>
+                            </span>
+                            <span class="text-gray-600">|</span>
+                            <span id="portalQrCountdown" class="font-mono font-bold text-amber-400">02:00</span>
+                        </div>
+
+                        <!-- Interactive Simulation Button -->
+                        <div class="pt-2 max-w-sm mx-auto">
+                            <button type="button" onclick="simulateMobilePortalQrPay()" id="portalSimulateScanBtn" class="w-full py-2.5 px-4 rounded-xl text-xs font-semibold bg-[#1f2430] border border-[#2a3040] hover:border-emerald-500 text-emerald-400 transition flex items-center justify-center gap-2 shadow">
+                                <i class="fas fa-mobile-alt"></i>
+                                <span>Simulate Mobile Scan & Pay</span>
+                            </button>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Dedicated Payment History Card (Clean, Standalone) -->
+            <div class="mt-8 bg-[#161a22] border border-[#2a3040] rounded-[28px] shadow-2xl p-6 sm:p-8">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-base font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                        <i class="fas fa-history text-[#4f8ef7]"></i> Payment History
+                    </h3>
+                    <span class="text-xs text-[#6b7280]">Live database records</span>
+                </div>
+                <div class="overflow-x-auto rounded-xl border border-[#2a3040]">
+                    <table class="w-full text-sm">
+                        <thead>
+                            <tr class="bg-[#1f2430] text-gray-400 border-b border-[#2a3040] text-xs">
+                                <th class="text-left p-3.5">Date & Time</th>
+                                <th class="text-left p-3.5">Description</th>
+                                <th class="text-left p-3.5">Amount</th>
+                                <th class="text-left p-3.5">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="paymentHistoryBody" class="divide-y divide-[#2a3040] bg-[#0d0f14]/50">
+                            <tr>
+                                <td colspan="4" class="p-6 text-center text-gray-500 italic">
+                                    <i class="fas fa-spinner fa-spin mr-2"></i>Loading payment records from database...
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- MY PROFILE SECTION -->
+    <section id="profile" class="container mx-auto mt-6 p-4 pb-28 hidden">
+        <div class="max-w-2xl mx-auto">
+            <div class="bg-[#161a22] rounded-[32px] border border-[#2a3040] shadow-2xl p-8">
+                <h2 class="text-2xl font-bold text-white mb-2"><i class="fas fa-user-circle mr-2 text-[#4f8ef7]"></i>My Profile</h2>
+                <p class="text-[#6b7280] mb-8">Update your personal information and vehicle details.</p>
+
+                <form id="profileForm" onsubmit="saveProfile(event)">
+                    <div class="flex items-center space-x-4 mb-6">
+                        <div id="profilePhotoContainer" class="w-20 h-20 bg-gradient-to-br from-[#4f8ef7] to-[#7c3aed] rounded-full overflow-hidden flex items-center justify-center text-white text-3xl font-bold shadow-[0_8px_24px_rgba(79,142,247,0.3)]">
+                            <span id="profileInitials">--</span>
+                        </div>
+                        <div>
+                            <p class="text-sm text-[#6b7280]">Profile Picture</p>
+                            <button type="button" onclick="document.getElementById('photoInput').click()" class="text-[#4f8ef7] text-sm font-bold hover:underline"><i class="fas fa-camera mr-1"></i>Change Photo</button>
+                            <input type="file" id="photoInput" class="hidden" accept="image/*" onchange="handlePhotoSelect(this)">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                        <div>
+                            <label class="block text-xs font-bold uppercase tracking-wider text-[#6b7280] mb-2">First Name</label>
+                            <input type="text" id="firstName" class="w-full bg-[#0d0f14] border border-[#2a3040] rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#4f8ef7] transition-all">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold uppercase tracking-wider text-[#6b7280] mb-2">Last Name</label>
+                            <input type="text" id="lastName" class="w-full bg-[#0d0f14] border border-[#2a3040] rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#4f8ef7] transition-all">
+                        </div>
+                    </div>
+
+                    <div class="mb-6">
+                        <label class="block text-xs font-bold uppercase tracking-wider text-[#6b7280] mb-2">Email Address</label>
+                        <input type="email" id="email" class="w-full bg-[#0d0f14] border border-[#2a3040] rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#4f8ef7] transition-all" readonly>
+                    </div>
+
+                    <div class="mb-6">
+                        <label class="block text-xs font-bold uppercase tracking-wider text-[#6b7280] mb-2">Phone Number</label>
+                        <input type="tel" id="mobileNumber" class="w-full bg-[#0d0f14] border border-[#2a3040] rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#4f8ef7] transition-all">
+                    </div>
+
+                    <div class="mb-8">
+                        <label class="block text-xs font-bold uppercase tracking-wider text-[#6b7280] mb-2">License Plate Number</label>
+                        <input type="text" id="carRegistration" class="w-full bg-[#0d0f14] border border-[#2a3040] rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#4f8ef7] transition-all uppercase">
+                    </div>
+
+                    <div class="border-t border-[#2a3040] pt-6 mt-4">
+                        <h3 class="text-xs font-bold text-[#6b7280] uppercase tracking-widest mb-4"><i class="fas fa-lock mr-1"></i>Change Password</h3>
+                        <div class="mb-6">
+                            <label class="block text-xs font-bold uppercase tracking-wider text-[#6b7280] mb-2">Current Password</label>
+                            <input type="password" id="currentPassword" placeholder="Enter current password" class="w-full bg-[#0d0f14] border border-[#2a3040] rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#4f8ef7] transition-all">
+                        </div>
+                        <div class="mb-6">
+                            <label class="block text-xs font-bold uppercase tracking-wider text-[#6b7280] mb-2">New Password</label>
+                            <input type="password" id="newPassword" placeholder="Enter new password" class="w-full bg-[#0d0f14] border border-[#2a3040] rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#4f8ef7] transition-all">
+                        </div>
+                    </div>
+
+                    <div class="flex space-x-3 mt-6">
+                        <button type="submit" class="flex-1 bg-gradient-to-r from-[#4f8ef7] to-[#7c3aed] text-white py-4 rounded-xl font-bold font-['Syne'] hover:opacity-90 transition-all transform hover:-translate-y-1 shadow-[0_8px_20px_rgba(79,142,247,0.3)]">
+                            <i class="fas fa-save mr-2"></i>Save Changes
+                        </button>
+                        <button type="button" onclick="cancelEdit()" class="px-8 border border-[#2a3040] text-white py-4 rounded-xl font-bold font-['Syne'] hover:bg-[#1e2330] transition-all">
+                            Cancel
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </section>
+
+    <!-- EXTEND TIME MODAL -->
+    <div id="extendModal" class="modal">
+        <div class="bg-[#161a22] border border-[#2a3040] rounded-[28px] shadow-2xl max-w-lg w-full mx-4 p-6 sm:p-8 fade-in text-white">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold font-syne text-white flex items-center gap-2">
+                    <i class="fas fa-plus-circle text-emerald-400"></i>Extend Parking Duration
+                </h3>
+                <button onclick="closeExtendModal()" class="text-gray-400 hover:text-white text-xl transition"><i class="fas fa-times"></i></button>
+            </div>
+            
+            <p class="text-gray-400 text-xs mb-5">Select the extra hours you need for your active parking session:</p>
+
+            <div class="grid grid-cols-2 gap-3 mb-6">
+                <div class="price-card border border-[#2a3040] bg-[#0d0f14] rounded-xl p-4 cursor-pointer hover:border-[#4f8ef7] transition text-center" onclick="selectExtension(1, 20, this)">
+                    <p class="text-xl font-bold text-white font-syne">1 Hour</p>
+                    <p class="text-sm font-bold text-[#4f8ef7] mt-1 font-mono">R20.00</p>
+                    <p class="text-[10px] text-gray-500 mt-0.5">R20.00 / hr</p>
+                </div>
+                <div class="price-card border border-[#2a3040] bg-[#0d0f14] rounded-xl p-4 cursor-pointer hover:border-[#4f8ef7] transition text-center" onclick="selectExtension(2, 35, this)">
+                    <p class="text-xl font-bold text-white font-syne">2 Hours</p>
+                    <p class="text-sm font-bold text-[#4f8ef7] mt-1 font-mono">R35.00</p>
+                    <p class="text-[10px] text-gray-500 mt-0.5">R17.50 / hr</p>
+                </div>
+                <div class="price-card border border-[#2a3040] bg-[#0d0f14] rounded-xl p-4 cursor-pointer hover:border-[#4f8ef7] transition text-center" onclick="selectExtension(3, 50, this)">
+                    <p class="text-xl font-bold text-white font-syne">3 Hours</p>
+                    <p class="text-sm font-bold text-[#4f8ef7] mt-1 font-mono">R50.00</p>
+                    <p class="text-[10px] text-gray-500 mt-0.5">R16.67 / hr</p>
+                </div>
+                <div class="price-card border border-[#2a3040] bg-[#0d0f14] rounded-xl p-4 cursor-pointer hover:border-[#4f8ef7] transition text-center" onclick="selectExtension(4, 65, this)">
+                    <p class="text-xl font-bold text-white font-syne">4 Hours</p>
+                    <p class="text-sm font-bold text-[#4f8ef7] mt-1 font-mono">R65.00</p>
+                    <p class="text-[10px] text-gray-500 mt-0.5">R16.25 / hr</p>
+                </div>
+                <div class="price-card border border-[#2a3040] bg-[#0d0f14] rounded-xl p-4 cursor-pointer hover:border-[#4f8ef7] transition text-center" onclick="selectExtension(5, 80, this)">
+                    <p class="text-xl font-bold text-white font-syne">5 Hours</p>
+                    <p class="text-sm font-bold text-[#4f8ef7] mt-1 font-mono">R80.00</p>
+                    <p class="text-[10px] text-gray-500 mt-0.5">R16.00 / hr</p>
+                </div>
+                <div class="price-card border border-[#2a3040] bg-[#0d0f14] rounded-xl p-4 cursor-pointer hover:border-[#4f8ef7] transition text-center" onclick="selectExtension(6, 100, this)">
+                    <p class="text-xl font-bold text-white font-syne">6 Hours</p>
+                    <p class="text-sm font-bold text-[#4f8ef7] mt-1 font-mono">R100.00</p>
+                    <p class="text-[10px] text-gray-500 mt-0.5">R16.67 / hr</p>
+                </div>
+            </div>
+
+            <div class="bg-[#0d0f14] border border-[#2a3040] rounded-xl p-4 mb-6 text-sm">
+                <div class="flex justify-between items-center text-gray-300">
+                    <span class="text-xs text-gray-400">Selected Duration:</span>
+                    <span class="text-white font-bold font-mono" id="selectedExtension">--</span>
+                </div>
+                <div class="flex justify-between items-center mt-2 pt-2 border-t border-[#2a3040]">
+                    <span class="text-xs font-bold uppercase text-gray-400">Total Additional Fee:</span>
+                    <span class="text-2xl font-bold font-syne text-[#4f8ef7] font-mono" id="selectedAmount">R0.00</span>
+                </div>
+            </div>
+
+            <button onclick="confirmExtension()" id="confirmExtendBtn" class="w-full bg-gradient-to-r from-[#4f8ef7] to-[#7c3aed] text-white py-3.5 rounded-xl font-bold font-syne hover:opacity-95 transition disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg" disabled>
+                <i class="fas fa-check"></i>
+                <span>Confirm & Proceed to Payment</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- SESSION EXPIRY & INACTIVITY WARNING MODAL -->
+    <div id="sessionWarningModal" class="modal">
+        <div class="bg-[#161a22] border border-[#2a3040] rounded-2xl shadow-2xl max-w-md w-full mx-4 p-6 fade-in text-white relative">
+            <div class="w-16 h-16 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center mx-auto mb-4 text-amber-400 text-3xl">
+                <i class="fas fa-clock animate-pulse"></i>
+            </div>
+            
+            <h3 class="text-xl font-bold text-center text-white font-['Syne'] mb-2">Session Expiring Soon</h3>
+            <p class="text-gray-400 text-sm text-center mb-6">
+                You have been inactive or your session token is expiring. To remain signed in and preserve your current work, click <strong class="text-white">Extend Time</strong>.
+            </p>
+
+            <div class="bg-[#0d0f14] border border-[#2a3040] rounded-xl p-4 mb-6 text-center">
+                <span class="text-xs text-gray-400 uppercase tracking-wider block mb-1">Time Remaining</span>
+                <span id="sessionExpiryCountdown" class="text-4xl font-mono font-bold text-amber-400">02:00</span>
+            </div>
+
+            <div class="flex flex-col sm:flex-row gap-3">
+                <button type="button" onclick="SessionManager.logout('manual')" class="w-full sm:w-1/2 py-2.5 px-4 rounded-xl border border-[#2a3040] bg-[#1f2430] hover:bg-[#252b3b] text-gray-300 font-medium transition text-sm flex items-center justify-center">
+                    <i class="fas fa-sign-out-alt mr-2"></i>Log Out
+                </button>
+                <button type="button" id="extendSessionModalBtn" onclick="SessionManager.extendSession()" class="w-full sm:w-1/2 py-2.5 px-4 rounded-xl bg-gradient-to-r from-[#4f8ef7] to-[#7c3aed] text-white font-bold hover:opacity-95 transition text-sm flex items-center justify-center shadow-lg shadow-blue-500/20">
+                    <i class="fas fa-sync-alt mr-2"></i>Extend Time
+                </button>
+            </div>
+    </div>
+
+    <!-- PAYMENT SUCCESS CONFIRMATION MODAL -->
+    <div id="paymentSuccessModal" class="modal">
+        <div class="bg-[#161a22] border border-emerald-500/40 rounded-3xl p-8 max-w-md w-full mx-4 fade-in text-center relative shadow-2xl text-white">
+            <div class="w-16 h-16 rounded-full bg-emerald-500/20 border-2 border-emerald-400 text-emerald-400 text-3xl flex items-center justify-center mx-auto mb-4 animate-bounce">
+                <i class="fas fa-check"></i>
+            </div>
+            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 mb-2">
+                TRANSACTION CONFIRMED
+            </span>
+            <h3 class="text-2xl font-bold text-white font-['Syne'] mb-1">Payment Successful!</h3>
+            <p class="text-gray-400 text-xs mb-6">Your parking fee has been settled and gate exit clearance is granted.</p>
+
+            <div class="bg-[#0d0f14] border border-[#2a3040] rounded-xl p-4 text-left space-y-2.5 mb-6 text-xs font-sans">
+                <div class="flex justify-between border-b border-[#2a3040] pb-2">
+                    <span class="text-gray-400">Reference:</span>
+                    <span class="font-mono font-bold text-white" id="modalTxnRef">TXN-AI-2026-9812</span>
+                </div>
+                <div class="flex justify-between border-b border-[#2a3040] pb-2">
+                    <span class="text-gray-400">Amount Paid:</span>
+                    <span class="font-mono font-bold text-emerald-400 text-sm" id="modalAmountPaid">R0.00</span>
+                </div>
+                <div class="flex justify-between border-b border-[#2a3040] pb-2">
+                    <span class="text-gray-400">Exit Window:</span>
+                    <span class="font-bold text-emerald-400 font-mono">15 Mins Free Exit</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-gray-400">Barrier Status:</span>
+                    <span class="font-bold text-emerald-400 uppercase">UNLOCKED / OPEN</span>
+                </div>
+            </div>
+
+            <div class="flex flex-col sm:flex-row gap-2.5">
+                <button type="button" onclick="closePaymentSuccessModal()" class="w-full py-3 px-4 rounded-xl font-bold text-sm bg-gradient-to-r from-[#4f8ef7] to-[#7c3aed] text-white hover:opacity-95 transition">
+                    Return to Dashboard
+                </button>
+                <a href="checkout.html" class="w-full py-3 px-4 rounded-xl font-semibold text-sm bg-[#1f2430] border border-[#2a3040] text-gray-300 hover:text-white transition flex items-center justify-center gap-1.5">
+                    <i class="fas fa-receipt"></i> Full Checkout
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- SUCCESS TOAST -->
+    <div id="successToast" class="fixed bottom-4 right-4 bg-green-600 text-white px-6 py-3 rounded-lg shadow-lg transform translate-y-20 transition-transform duration-300 z-50 flex items-center">
+        <i class="fas fa-check-circle mr-2"></i>
+        <span id="toastMessage">Operation successful!</span>
+    </div>
+
+    <script>
+        let selectedHours = 0;
+        let selectedPrice = 0;
+        let totalAmountDue = 0;
+
+        function showSection(sectionId) {
+            document.body.style.overflow = 'auto';
+            document.documentElement.style.overflow = 'auto';
+            const sections = ['dashboard', 'payment', 'profile'];
+            sections.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) {
+                    el.classList.add('hidden');
+                    el.classList.remove('section-view');
+                }
+            });
+
+            const target = document.getElementById(sectionId);
+            if (target) {
+                target.classList.remove('hidden');
+                target.classList.add('section-view');
+            }
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+
+            if (sectionId === 'payment') {
+                const dueEl = document.getElementById('amountDue');
+                const parsedDue = dueEl ? parseFloat(dueEl.textContent.replace(/[^\d.]/g, '')) : 0;
+                const activeAmount = totalAmountDue > 0 ? totalAmountDue : (parsedDue > 0 ? parsedDue : 35.00);
+                
+                const payAmtEl = document.getElementById('paymentAmount');
+                if (payAmtEl) payAmtEl.textContent = `R${activeAmount.toFixed(2)}`;
+                
+                document.querySelectorAll('.btnAmountText').forEach(el => el.textContent = `R${activeAmount.toFixed(2)}`);
+
+                if (window.state && window.state.user) {
+                    const payPlate = document.getElementById('paymentLicensePlate');
+                    if (payPlate) payPlate.textContent = window.state.user.carRegistration || 'GP 619 HHH';
+                }
+                selectPaymentMethod('card');
+            }
+        }
+
+        function toggleMobileMenu() {
+            document.getElementById('mobileMenu').classList.toggle('hidden');
+        }
+
+        function openExtendModal() {
+            document.getElementById('extendModal').classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeExtendModal() {
+            document.getElementById('extendModal').classList.remove('active');
+            document.body.style.overflow = 'auto';
+            // Reset selection
+            document.querySelectorAll('.price-card').forEach(c => c.classList.remove('selected'));
+            selectedHours = 0;
+            selectedPrice = 0;
+            document.getElementById('selectedExtension').textContent = '--';
+            document.getElementById('selectedAmount').textContent = 'R0.00';
+            document.getElementById('confirmExtendBtn').disabled = true;
+        }
+
+        function selectExtension(hours, price, element) {
+            document.querySelectorAll('.price-card').forEach(c => c.classList.remove('selected'));
+            element.classList.add('selected');
+            selectedHours = hours;
+            selectedPrice = price;
+            document.getElementById('selectedExtension').textContent = hours + ' Hour' + (hours > 1 ? 's' : '');
+            document.getElementById('selectedAmount').textContent = 'R' + price.toFixed(2);
+            document.getElementById('confirmExtendBtn').disabled = false;
+        }
+
+        async function confirmExtension() {
+            if (selectedHours === 0) return;
+            
+            const btn = document.getElementById('confirmExtendBtn');
+            const originalHtml = btn ? btn.innerHTML : '';
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Extending Session...';
+            }
+
+            try {
+                const token = localStorage.getItem('token');
+                const targetUrl = typeof getApiUrl === 'function' ? getApiUrl('/api/customer/extend-parking') : '/api/customer/extend-parking';
+                
+                const response = await fetch(targetUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        hours: selectedHours,
+                        amount: selectedPrice
+                    })
+                });
+
+                const data = await response.json();
+                if (!response.ok || !data.success) {
+                    throw new Error(data.message || 'Failed to extend parking session.');
+                }
+
+                // 1. Immediately update active session in memory and re-render countdown
+                if (window.state) {
+                    window.state.activeSession = data.session || {
+                        ...window.state.activeSession,
+                        sessionTimeout: data.session?.sessionTimeout
+                    };
+                    if (typeof window.renderActiveSession === 'function') {
+                        window.renderActiveSession(window.state.activeSession, window.state.user);
+                    }
+                }
+
+                // 2. Accumulate amount due
+                totalAmountDue += selectedPrice;
+                
+                // 3. Update extension summary card
+                document.getElementById('extendedHours').textContent = selectedHours + ' Hour' + (selectedHours > 1 ? 's' : '');
+                document.getElementById('extendedRate').textContent = 'R' + (selectedPrice / selectedHours).toFixed(2) + ' / hour';
+                document.getElementById('extendedAmount').textContent = 'R' + selectedPrice.toFixed(2);
+                document.getElementById('extensionSummary').classList.remove('hidden');
+                
+                // 4. Update amount due display
+                document.getElementById('amountDue').textContent = 'R' + totalAmountDue.toFixed(2);
+                if (document.getElementById('paymentAmount')) {
+                    document.getElementById('paymentAmount').textContent = 'R' + totalAmountDue.toFixed(2);
+                }
+                document.querySelectorAll('.btnAmountText').forEach(el => el.textContent = 'R' + totalAmountDue.toFixed(2));
+                
+                closeExtendModal();
+                showToast(`Parking time extended by ${selectedHours} hour(s)! Proceed to payment.`);
+
+            } catch (err) {
+                console.error('[EXTEND PARKING ERROR]:', err);
+                showToast(err.message || 'Failed to extend parking time.');
+            } finally {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = originalHtml;
+                }
+            }
+        }
+
+        let currentPortalQrSessionId = null;
+        let currentPortalQrToken = null;
+        let portalQrPollInterval = null;
+        let portalQrCountdownInterval = null;
+        let portalQrRemainingSeconds = 120;
+
+        function selectPaymentMethod(method) {
+            const methods = ['card', 'capitec', 'apple', 'qr'];
+            
+            // Tab styling
+            methods.forEach(m => {
+                const btn = document.getElementById('btnMethod' + m.charAt(0).toUpperCase() + m.slice(1));
+                if (btn) {
+                    if (m === method) {
+                        btn.className = "portal-method-btn p-3.5 rounded-xl border border-[#4f8ef7] bg-[#4f8ef7]/10 text-white font-bold text-xs flex flex-col items-center justify-center gap-1.5 transition";
+                    } else {
+                        btn.className = "portal-method-btn p-3.5 rounded-xl border border-[#2a3040] bg-[#1f2430] hover:border-[#4f8ef7] text-gray-300 font-bold text-xs flex flex-col items-center justify-center gap-1.5 transition";
+                    }
+                }
+            });
+
+            // Container visibility
+            const cardForm = document.getElementById('cardForm');
+            const capitecForm = document.getElementById('capitecForm');
+            const applePay = document.getElementById('applePayContainer');
+            const qrPay = document.getElementById('qrPayContainer');
+
+            if (cardForm) cardForm.classList.toggle('hidden', method !== 'card');
+            if (capitecForm) capitecForm.classList.toggle('hidden', method !== 'capitec');
+            if (applePay) applePay.classList.toggle('hidden', method !== 'apple');
+            if (qrPay) qrPay.classList.toggle('hidden', method !== 'qr');
+
+            // Sync amount labels
+            const amount = document.getElementById('paymentAmount') ? document.getElementById('paymentAmount').textContent : 'R0.00';
+            document.querySelectorAll('.btnAmountText').forEach(el => el.textContent = amount);
+
+            // If QR selected, generate dynamic QR code
+            if (method === 'qr') {
+                loadPortalPaymentQr();
+            } else {
+                clearPortalQrIntervals();
+            }
+        }
+
+        function clearPortalQrIntervals() {
+            if (portalQrPollInterval) {
+                clearInterval(portalQrPollInterval);
+                portalQrPollInterval = null;
+            }
+            if (portalQrCountdownInterval) {
+                clearInterval(portalQrCountdownInterval);
+                portalQrCountdownInterval = null;
+            }
+        }
+
+        async function loadPortalPaymentQr() {
+            clearPortalQrIntervals();
+
+            const spinner = document.getElementById('portalQrLoadingSpinner');
+            const qrImg = document.getElementById('portalQrImage');
+            const expiredOverlay = document.getElementById('portalQrExpiredOverlay');
+            const statusText = document.getElementById('portalQrStatusText');
+            const countdownEl = document.getElementById('portalQrCountdown');
+
+            if (spinner) spinner.classList.remove('hidden');
+            if (qrImg) qrImg.classList.add('hidden');
+            if (expiredOverlay) expiredOverlay.classList.add('hidden');
+            if (statusText) statusText.textContent = 'Generating payment QR code...';
+
+            portalQrRemainingSeconds = 120;
+            if (countdownEl) countdownEl.textContent = '02:00';
+
+            const amountEl = document.getElementById('paymentAmount');
+            const parsedCurrent = amountEl ? parseFloat(amountEl.textContent.replace(/[^\d.]/g, '')) : 0;
+            const payAmount = totalAmountDue > 0 ? totalAmountDue : (parsedCurrent > 0 ? parsedCurrent : 35.00);
+
+            try {
+                const endpoint = typeof getApiUrl === 'function' ? getApiUrl('/api/qr/generate') : '/api/qr/generate';
+                const res = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        type: 'payment',
+                        amount: payAmount,
+                        metadata: {
+                            licensePlate: state.user?.carRegistration || 'GP 619 HHH',
+                            bay: 'Bay 14'
+                        }
+                    })
+                });
+
+                const data = await res.json();
+                if (res.ok && data.success) {
+                    currentPortalQrSessionId = data.sessionId;
+                    currentPortalQrToken = data.token;
+
+                    if (qrImg) {
+                        qrImg.src = data.qrImage;
+                        qrImg.classList.remove('hidden');
+                    }
+                    if (spinner) spinner.classList.add('hidden');
+                    if (statusText) statusText.textContent = 'Waiting for mobile payment...';
+
+                    startPortalQrCountdown();
+                    startPortalQrPolling(data.sessionId, payAmount);
+                } else {
+                    throw new Error(data.message || 'Failed to generate payment QR');
+                }
+            } catch (err) {
+                console.error('[QR PORTAL ERROR]:', err);
+                if (spinner) spinner.classList.add('hidden');
+                if (statusText) statusText.textContent = 'Failed to load QR: ' + err.message;
+            }
+        }
+
+        function startPortalQrCountdown() {
+            const countdownEl = document.getElementById('portalQrCountdown');
+            const expiredOverlay = document.getElementById('portalQrExpiredOverlay');
+            const statusText = document.getElementById('portalQrStatusText');
+
+            portalQrCountdownInterval = setInterval(() => {
+                portalQrRemainingSeconds--;
+                const mins = Math.floor(portalQrRemainingSeconds / 60);
+                const secs = portalQrRemainingSeconds % 60;
+                if (countdownEl) {
+                    countdownEl.textContent = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+                }
+
+                if (portalQrRemainingSeconds <= 0) {
+                    clearPortalQrIntervals();
+                    if (expiredOverlay) expiredOverlay.classList.remove('hidden');
+                    if (statusText) statusText.textContent = 'QR Code has expired.';
+                }
+            }, 1000);
+        }
+
+        function startPortalQrPolling(sessionId, payAmount) {
+            const endpoint = typeof getApiUrl === 'function' ? getApiUrl(`/api/qr/status/${sessionId}`) : `/api/qr/status/${sessionId}`;
+
+            portalQrPollInterval = setInterval(async () => {
+                try {
+                    const res = await fetch(endpoint);
+                    const data = await res.json();
+
+                    if (data.status === 'completed') {
+                        clearPortalQrIntervals();
+                        executePaymentSuccess('qr', payAmount, data.receipt?.transactionId);
+                    }
+                } catch (pollErr) {
+                    console.warn('[QR POLL WARNING]:', pollErr.message);
+                }
+            }, 1500);
+        }
+
+        async function simulateMobilePortalQrPay() {
+            if (!currentPortalQrToken) {
+                if (typeof showToast === 'function') {
+                    showToast('Please wait for the QR code to finish loading first.', 'warning');
+                }
+                return;
+            }
+
+            const btn = document.getElementById('portalSimulateScanBtn');
+            const originalText = btn ? btn.innerHTML : '';
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1.5"></i>Simulating Phone Scan...';
+            }
+
+            try {
+                const endpoint = typeof getApiUrl === 'function' ? getApiUrl('/api/qr/verify-payment') : '/api/qr/verify-payment';
+                const amountEl = document.getElementById('paymentAmount');
+                const parsedCurrent = amountEl ? parseFloat(amountEl.textContent.replace(/[^\d.]/g, '')) : 0;
+                const payAmount = totalAmountDue > 0 ? totalAmountDue : (parsedCurrent > 0 ? parsedCurrent : 35.00);
+
+                const res = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        qrToken: currentPortalQrToken,
+                        paymentMethod: 'scan_to_pay_mobile',
+                        paidAmount: payAmount
+                    })
+                });
+
+                const data = await res.json();
+                if (res.ok && data.success) {
+                    clearPortalQrIntervals();
+                    executePaymentSuccess('qr', payAmount, data.receipt?.transactionId);
+                } else {
+                    const msg = data.message || 'Payment simulation failed.';
+                    if (typeof showToast === 'function') {
+                        showToast(msg, 'error');
+                    }
+                }
+            } catch (err) {
+                console.error('[SIMULATE QR PAY ERROR]:', err);
+                const errMsg = 'Could not simulate payment: ' + err.message;
+                if (typeof showToast === 'function') {
+                    showToast(errMsg, 'error');
+                }
+            } finally {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = originalText;
+                }
+            }
+        }
+
+        async function handlePaymentSubmit(event, method) {
+            if (event && event.preventDefault) event.preventDefault();
+            
+            let btn;
+            if (method === 'apple') {
+                btn = event.currentTarget;
+            } else if (event && event.target) {
+                btn = event.target.querySelector('button[type="submit"]');
+            }
+
+            const originalText = btn ? btn.innerHTML : 'Pay';
+            
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Processing Settlement...';
+            }
+
+            const amountEl = document.getElementById('paymentAmount');
+            const parsedCurrent = amountEl ? parseFloat(amountEl.textContent.replace(/[^\d.]/g, '')) : 0;
+            const paidAmount = totalAmountDue > 0 ? totalAmountDue : (parsedCurrent > 0 ? parsedCurrent : 35.00);
+
+            // Instant simulated clearance
+            setTimeout(() => {
+                executePaymentSuccess(method, paidAmount);
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = originalText;
+                }
+            }, 550);
+        }
+
+        async function executePaymentSuccess(method, paidAmount, customTxnId) {
+            const txnId = customTxnId || `TXN-AI-2026-${Math.floor(100000 + Math.random() * 900000)}`;
+            const now = new Date();
+
+            // Persist payment to database
+            try {
+                const token = localStorage.getItem('token');
+                const targetUrl = typeof getApiUrl === 'function' ? getApiUrl('/api/customer/record-payment') : '/api/customer/record-payment';
+                await fetch(targetUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        amount: paidAmount,
+                        paymentMethod: method,
+                        transactionRef: txnId
+                    })
+                });
+            } catch (err) {
+                console.warn('Could not record payment in DB:', err);
+            }
+
+            // 1. Reset outstanding balance and clear extension summary
+            totalAmountDue = 0;
+            if (document.getElementById('amountDue')) document.getElementById('amountDue').textContent = 'R0.00';
+            if (document.getElementById('paymentAmount')) document.getElementById('paymentAmount').textContent = 'R0.00';
+            document.querySelectorAll('.btnAmountText').forEach(el => el.textContent = 'R0.00');
+
+            const extSummary = document.getElementById('extensionSummary');
+            if (extSummary) extSummary.classList.add('hidden');
+
+            // 2. Populate confirmation modal
+            const modalTxn = document.getElementById('modalTxnRef');
+            if (modalTxn) modalTxn.textContent = txnId;
+
+            const modalAmt = document.getElementById('modalAmountPaid');
+            if (modalAmt) modalAmt.textContent = `R${parseFloat(paidAmount).toFixed(2)}`;
+
+            const successModal = document.getElementById('paymentSuccessModal');
+            if (successModal) successModal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+
+            // 3. Append to payment history table
+            const historyBody = document.getElementById('paymentHistoryBody');
+            if (historyBody) {
+                const row = document.createElement('tr');
+                row.className = "border-b border-[#2a3040] hover:bg-[#1f2430]/40 transition fade-in";
+                row.innerHTML = `
+                    <td class="p-3.5 text-gray-300 font-mono text-xs">${now.toLocaleDateString()} ${now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</td>
+                    <td class="p-3.5 text-white font-medium">Parking - Extension Payment (${method.toUpperCase()})</td>
+                    <td class="p-3.5 font-bold text-white font-mono">R${parseFloat(paidAmount).toFixed(2)}</td>
+                    <td class="p-3.5">
+                        <span class="bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 px-2.5 py-1 rounded-full text-xs font-bold inline-flex items-center">
+                            <i class="fas fa-check-circle mr-1 text-[10px]"></i>PAID
+                        </span>
+                    </td>
+                `;
+                if (historyBody.innerText.includes('Loading') || historyBody.children.length === 0) {
+                    historyBody.innerHTML = '';
+                }
+                historyBody.insertBefore(row, historyBody.firstChild);
+            }
+
+            showToast('Payment successful! Parking time extended and authorized.');
+        }
+
+        function closePaymentSuccessModal() {
+            const modal = document.getElementById('paymentSuccessModal');
+            if (modal) modal.classList.remove('active');
+            document.body.style.overflow = 'auto';
+            showSection('dashboard');
+            if (typeof window.fetchUserData === 'function') {
+                window.fetchUserData();
+            }
+        }
+
+        function showToast(message) {
+            const toast = document.getElementById('successToast');
+            document.getElementById('toastMessage').textContent = message;
+            toast.classList.remove('translate-y-20');
+            setTimeout(() => {
+                toast.classList.add('translate-y-20');
+            }, 3000);
+        }
+
+        function logout() {
+            if (window.SessionManager) {
+                window.SessionManager.logout('manual');
+            } else {
+                localStorage.removeItem('token');
+                localStorage.removeItem('role');
+                localStorage.removeItem('user');
+                window.location.href = 'login.html';
+            }
+        }
+
+        function cancelEdit() {
+            // Clear password fields on cancel
+            if(document.getElementById('currentPassword')) document.getElementById('currentPassword').value = '';
+            if(document.getElementById('newPassword')) document.getElementById('newPassword').value = '';
+            showSection('dashboard');
+        }
+
+        // Global safeguard: Escape key closes active modals and restores scrollability
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                closeExtendModal();
+                const successModal = document.getElementById('paymentSuccessModal');
+                if (successModal && successModal.classList.contains('active')) {
+                    closePaymentSuccessModal();
+                }
+                document.body.style.overflow = 'auto';
+                document.documentElement.style.overflow = 'auto';
+            }
+        });
+
+        // Close modals on backdrop click
+        document.querySelectorAll('.modal').forEach(modal => {
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    modal.classList.remove('active');
+                    document.body.style.overflow = 'auto';
+                    document.documentElement.style.overflow = 'auto';
+                }
+            });
+        });
+    </script>
+    <script src="toast.js"></script>
+    <!-- Link the database logic script here -->
+    <script src="customer-portal.js"></script>
+</body>
+</html>

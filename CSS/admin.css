@@ -1,0 +1,47 @@
+/* admin.css */
+.ai-container {
+    background-color: #f0f2f5;
+    padding: 30px;
+    display: flex;
+    gap: 20px;
+}
+
+.video-feed {
+    flex: 2;
+    background: #000;
+    border-radius: 4px;
+    overflow: hidden;
+    position: relative;
+}
+
+.recognition-panel {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.recognition-card {
+    background: white;
+    padding: 15px;
+    border: 1px solid #ccc;
+}
+
+.confidence-score {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 3px;
+    font-weight: bold;
+    color: white;
+}
+
+.score-high { background-color: #4caf50; } /* ≥95% */
+.score-low { background-color: #f44336; }  /* <95% */
+
+.manual-verification-banner {
+    background: #fff3f3;
+    border: 1px solid #ffcdd2;
+    color: #c62828;
+    padding: 10px;
+    margin-top: 20px;
+}

@@ -1,0 +1,844 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulated Checkout - AI Parking Monitor</title>
+    <meta name="description" content="Simulated instant payment checkout for AI Parking Monitor. Review transaction summary and authorize exit with zero gateway delays.">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'DM Sans', sans-serif;
+            background-color: #0d0f14;
+            color: #e8eaf0;
+            min-height: 100vh;
+        }
+        h1, h2, h3, h4, .font-syne {
+            font-family: 'Syne', sans-serif;
+        }
+        .fade-in {
+            animation: fadeIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(12px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .method-panel {
+            animation: panelFade 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            will-change: opacity, transform;
+        }
+        @keyframes panelFade {
+            from { opacity: 0; transform: translateY(8px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes successBounce {
+            0% { transform: scale(0.6); opacity: 0; }
+            70% { transform: scale(1.1); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .animate-success-icon {
+            animation: successBounce 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+        @keyframes modalSpring {
+            0% { opacity: 0; transform: scale(0.92) translateY(12px); }
+            70% { opacity: 1; transform: scale(1.02) translateY(-2px); }
+            100% { opacity: 1; transform: scale(1) translateY(0); }
+        }
+        .modal-spring {
+            animation: modalSpring 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+        .tab-active {
+            border-color: #4f8ef7 !important;
+            background-color: rgba(79, 142, 247, 0.08) !important;
+            color: #ffffff !important;
+        }
+        .font-mono, #payQrCountdown, #receiptAmountPaid, #summaryTotalAmount {
+            font-variant-numeric: tabular-nums;
+            font-feature-settings: "tnum";
+        }
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+            #printableReceipt, #printableReceipt * {
+                visibility: visible;
+            }
+            #printableReceipt {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                background: white !important;
+                color: black !important;
+            }
+        }
+    </style>
+</head>
+<body class="bg-[#0d0f14] text-[#e8eaf0] antialiased selection:bg-[#4f8ef7] selection:text-white">
+
+    <!-- TOP HEADER -->
+    <header class="border-b border-[#2a3040] bg-[#161a22]/80 backdrop-blur-md sticky top-0 z-40">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 h-18 py-3.5 flex items-center justify-between">
+            <a href="customer-portal.html" class="flex items-center space-x-3 group">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-[#4f8ef7] to-[#7c3aed] flex items-center justify-center text-white text-lg font-bold shadow-md shadow-blue-500/20 group-hover:scale-105 transition-transform">
+                    <i class="fas fa-parking"></i>
+                </div>
+                <div>
+                    <span class="font-syne font-extrabold text-lg text-white tracking-tight flex items-center gap-1">
+                        AI Parking <span class="text-[#4f8ef7]">Checkout</span>
+                    </span>
+                    <span class="text-[10px] text-gray-400 block">Instant Payment Simulation Sandbox</span>
+                </div>
+            </a>
+
+            <div class="flex items-center space-x-3">
+                <div class="hidden sm:flex items-center space-x-2 bg-[#1f2430] border border-[#2a3040] rounded-full px-3 py-1 text-xs text-gray-300">
+                    <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                    <span>Sandbox Mode • No Real Charges</span>
+                </div>
+
+                <a href="customer-portal.html" class="px-3.5 py-1.5 rounded-xl text-xs font-bold text-gray-300 hover:text-white bg-[#1f2430] border border-[#2a3040] hover:border-[#4f8ef7] transition flex items-center gap-1.5">
+                    <i class="fas fa-user-circle"></i>
+                    <span>Portal</span>
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN CONTAINER -->
+    <main class="max-w-6xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
+
+        <!-- CHECKOUT VIEW (Active State) -->
+        <div id="checkoutView" class="fade-in">
+            <div class="mb-8">
+                <a href="customer-portal.html" class="text-xs font-semibold text-gray-400 hover:text-[#4f8ef7] transition inline-flex items-center gap-1.5 mb-2">
+                    <i class="fas fa-arrow-left"></i> Back to Portal
+                </a>
+                <h1 class="text-2xl sm:text-3xl font-extrabold text-white font-syne">Complete Parking Payment</h1>
+                <p class="text-gray-400 text-sm mt-1">Review your automated parking fee and execute simulated settlement.</p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+                
+                <!-- LEFT COLUMN: ORDER / TRANSACTION SUMMARY -->
+                <div class="lg:col-span-5 space-y-6">
+                    <div class="bg-[#161a22] border border-[#2a3040] rounded-2xl p-6 shadow-xl relative overflow-hidden">
+                        <div class="absolute top-0 right-0 w-32 h-32 bg-[#4f8ef7]/5 rounded-bl-full pointer-events-none"></div>
+
+                        <div class="flex items-center justify-between border-b border-[#2a3040] pb-4 mb-5">
+                            <h2 class="font-syne font-bold text-base text-white flex items-center gap-2">
+                                <i class="fas fa-receipt text-[#4f8ef7]"></i> Session Summary
+                            </h2>
+                            <span class="text-[11px] font-mono uppercase bg-[#1f2430] text-emerald-400 px-2.5 py-0.5 rounded-full border border-[#2a3040]">
+                                Ready to Settle
+                            </span>
+                        </div>
+
+                        <!-- Vehicle Plate Highlight -->
+                        <div class="bg-[#0d0f14] border border-[#2a3040] rounded-xl p-4 mb-5 flex items-center justify-between">
+                            <div>
+                                <span class="text-[11px] text-gray-400 uppercase tracking-wider block mb-1">Target Vehicle</span>
+                                <div class="flex items-center gap-2">
+                                    <span class="bg-yellow-400 text-black font-mono font-black text-sm px-2.5 py-0.5 rounded border border-black/40 shadow-sm" id="summaryPlateDisplay">GP 619 HHH</span>
+                                    <button onclick="promptEditPlate()" class="text-xs text-gray-400 hover:text-[#4f8ef7] transition" title="Change Plate">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <span class="text-[11px] text-gray-400 uppercase tracking-wider block mb-1">Parking Zone</span>
+                                <span class="text-xs font-bold text-white font-mono">Bay A-14 (Level 2)</span>
+                            </div>
+                        </div>
+
+                        <!-- Itemized Breakdown -->
+                        <div class="space-y-3 text-sm border-b border-[#2a3040] pb-5 mb-5 text-gray-300">
+                            <div class="flex justify-between">
+                                <span class="text-gray-400">Entry Location</span>
+                                <span class="font-medium text-white">North Facility - Gate 3A</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-400">Total Billed Duration</span>
+                                <span class="font-medium text-white font-mono" id="summaryDuration">2 Hours</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-400">Complimentary Grace Time</span>
+                                <span class="text-emerald-400 font-mono">-30 mins (Free)</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-400">Standard Bay Tariff</span>
+                                <span class="font-mono text-white" id="summaryBaseTariff">R30.00</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-400">AI Optical & Barrier Service</span>
+                                <span class="font-mono text-white">R5.00</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-400">VAT (15% Included)</span>
+                                <span class="font-mono text-gray-400">Included</span>
+                            </div>
+                        </div>
+
+                        <!-- Total Due Box -->
+                        <div class="flex items-baseline justify-between pt-1">
+                            <div>
+                                <span class="text-xs font-bold uppercase tracking-wider text-gray-400">Amount Due</span>
+                                <p class="text-[11px] text-emerald-400 font-medium">Instant barrier clearance on payment</p>
+                            </div>
+                            <div class="text-right">
+                                <span class="font-syne font-extrabold text-3xl text-transparent bg-clip-text bg-gradient-to-r from-white via-white to-[#4f8ef7]" id="summaryTotalAmount">R35.00</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Sandbox Notice -->
+                    <div class="bg-blue-500/10 border border-blue-500/20 rounded-xl p-4 text-xs text-blue-300 flex items-start gap-3">
+                        <i class="fas fa-info-circle text-base text-[#4f8ef7] flex-shrink-0 mt-0.5"></i>
+                        <div>
+                            <strong class="text-white block mb-0.5">Instant Simulation Environment</strong>
+                            This checkout executes in test mode. No card charges or bank debits will be incurred. Clicking "Pay Now" immediately authorizes simulated exit.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- RIGHT COLUMN: PAYMENT METHODS & INSTANT PAY TRIGGER -->
+                <div class="lg:col-span-7">
+                    <div class="bg-[#161a22] border border-[#2a3040] rounded-2xl p-6 sm:p-8 shadow-xl">
+                        
+                        <h2 class="font-syne font-bold text-lg text-white mb-2">Select Payment Method</h2>
+                        <p class="text-gray-400 text-xs mb-6">Choose any simulated payment channel below to finalize.</p>
+
+                        <!-- Method Selector Tabs -->
+                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-6">
+                            <button type="button" onclick="switchMethod('card')" id="tab-card" class="tab-btn tab-active border border-[#2a3040] rounded-xl p-3 text-center transition flex flex-col items-center justify-center gap-1">
+                                <i class="fas fa-credit-card text-base text-[#4f8ef7]"></i>
+                                <span class="text-xs font-bold">Credit Card</span>
+                            </button>
+
+                            <button type="button" onclick="switchMethod('capitec')" id="tab-capitec" class="tab-btn border border-[#2a3040] bg-[#0d0f14] text-gray-400 rounded-xl p-3 text-center transition flex flex-col items-center justify-center gap-1 hover:border-gray-500">
+                                <i class="fas fa-mobile-alt text-base text-red-500"></i>
+                                <span class="text-xs font-bold">Capitec Pay</span>
+                            </button>
+
+                            <button type="button" onclick="switchMethod('apple')" id="tab-apple" class="tab-btn border border-[#2a3040] bg-[#0d0f14] text-gray-400 rounded-xl p-3 text-center transition flex flex-col items-center justify-center gap-1 hover:border-gray-500">
+                                <i class="fab fa-apple text-base text-white"></i>
+                                <span class="text-xs font-bold">Apple Pay</span>
+                            </button>
+
+                            <button type="button" onclick="switchMethod('qr')" id="tab-qr" class="tab-btn border border-[#2a3040] bg-[#0d0f14] text-gray-400 rounded-xl p-3 text-center transition flex flex-col items-center justify-center gap-1 hover:border-gray-500">
+                                <i class="fas fa-qrcode text-base text-emerald-400"></i>
+                                <span class="text-xs font-bold">QR Pay</span>
+                            </button>
+                        </div>
+
+                        <!-- 1. CREDIT CARD FORM -->
+                        <div id="method-card" class="method-panel space-y-4">
+                            <div>
+                                <label class="block text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1.5">Cardholder Name</label>
+                                <input type="text" id="cardNameInput" value="Collen Lubisi" class="w-full bg-[#0d0f14] border border-[#2a3040] rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-[#4f8ef7] transition">
+                            </div>
+
+                            <div>
+                                <label class="block text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1.5">Card Number</label>
+                                <div class="relative">
+                                    <input type="text" id="cardNumberInput" value="4532 •••• •••• 8842" maxlength="19" class="w-full bg-[#0d0f14] border border-[#2a3040] rounded-xl pl-4 pr-11 py-3 text-white font-mono text-sm focus:outline-none focus:border-[#4f8ef7] transition">
+                                    <div class="absolute right-3.5 top-3 text-gray-400 text-lg">
+                                        <i class="fab fa-cc-visa text-[#4f8ef7]"></i>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1.5">Expiry Date</label>
+                                    <input type="text" id="cardExpiryInput" value="08/28" maxlength="5" class="w-full bg-[#0d0f14] border border-[#2a3040] rounded-xl px-4 py-3 text-white font-mono text-sm focus:outline-none focus:border-[#4f8ef7] transition text-center">
+                                </div>
+                                <div>
+                                    <label class="block text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1.5">Security Code (CVV)</label>
+                                    <input type="password" id="cardCvvInput" value="894" maxlength="4" class="w-full bg-[#0d0f14] border border-[#2a3040] rounded-xl px-4 py-3 text-white font-mono text-sm focus:outline-none focus:border-[#4f8ef7] transition text-center">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 2. CAPITEC PAY FORM -->
+                        <div id="method-capitec" class="method-panel hidden space-y-4">
+                            <div class="bg-red-500/10 border border-red-500/20 rounded-xl p-4 text-xs text-red-300">
+                                <span class="font-bold text-white block mb-1">Capitec Mobile Approval</span>
+                                Enter your registered cellphone number to simulate instant app push authorization.
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1.5">Registered Mobile Number</label>
+                                <input type="tel" id="capitecMobileInput" value="081 407 4182" class="w-full bg-[#0d0f14] border border-[#2a3040] rounded-xl px-4 py-3 text-white font-mono text-sm focus:outline-none focus:border-red-500 transition">
+                            </div>
+                        </div>
+
+                        <!-- 3. APPLE PAY VIEW -->
+                        <div id="method-apple" class="method-panel hidden space-y-4 text-center py-4">
+                            <div class="w-16 h-16 rounded-2xl bg-white text-black text-3xl flex items-center justify-center mx-auto shadow-lg mb-2">
+                                <i class="fab fa-apple"></i>
+                            </div>
+                            <p class="text-sm font-semibold text-white">Apple Pay QuickPass</p>
+                            <p class="text-xs text-gray-400 max-w-sm mx-auto">Double-click or trigger below to authorize simulated biometric Apple Pay settlement.</p>
+                        </div>
+
+                        <!-- 4. DYNAMIC QR CODE PAYMENT PANEL -->
+                        <div id="method-qr" class="method-panel hidden space-y-4 text-center py-2">
+                            <div class="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-3 text-xs text-emerald-300 text-left">
+                                <span class="font-bold text-white block mb-0.5">Scan to Pay via Banking / SnapScan App</span>
+                                Scan this dynamic, single-use QR code to approve simulated settlement.
+                            </div>
+
+                            <div class="relative inline-block mx-auto bg-white p-3 rounded-2xl shadow-xl">
+                                <div id="payQrWrapper" class="w-44 h-44 aspect-square bg-gray-50 rounded-xl flex items-center justify-center relative overflow-hidden">
+                                    <div id="payQrSpinner" class="w-10 h-10 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
+                                    <img id="payQrImage" src="" alt="Dynamic Payment QR" class="w-44 h-44 hidden object-contain transition-opacity duration-300">
+                                    
+                                    <!-- Expired Overlay -->
+                                    <div id="payQrExpiredOverlay" class="hidden absolute inset-0 bg-black/85 backdrop-blur-sm rounded-xl flex flex-col items-center justify-center p-3 text-center">
+                                        <i class="fas fa-history text-amber-400 text-2xl mb-1"></i>
+                                        <span class="text-xs font-bold text-white mb-2">QR Code Expired</span>
+                                        <button type="button" onclick="loadPaymentQrCode()" class="px-3 py-1.5 bg-emerald-500 text-white text-xs font-bold rounded-lg hover:opacity-90 transition">
+                                            <i class="fas fa-redo mr-1"></i>Refresh
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="flex items-center justify-center space-x-3 text-xs">
+                                <span class="inline-flex items-center gap-1.5 text-gray-400">
+                                    <span id="payQrDot" class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                                    <span id="payQrStatus">Listening for mobile scan...</span>
+                                </span>
+                                <span class="text-gray-600">|</span>
+                                <span id="payQrCountdown" class="font-mono font-bold text-amber-400">02:00</span>
+                            </div>
+
+                            <button type="button" onclick="simulateMobilePaymentScan()" id="simulatePayScanBtn" class="w-full py-2.5 px-4 rounded-xl text-xs font-semibold bg-[#1f2430] border border-[#2a3040] hover:border-emerald-500 text-emerald-400 transition flex items-center justify-center gap-2 shadow">
+                                <i class="fas fa-mobile-alt"></i>
+                                <span>Simulate Mobile Scan & Pay (Instant)</span>
+                            </button>
+                        </div>
+
+                        <!-- PAY NOW BUTTON (Primary Action) -->
+                        <div class="pt-6 border-t border-[#2a3040] mt-6">
+                            <button id="payNowBtn" type="button" onclick="executeSimulatedPayment()" class="w-full py-4 px-6 rounded-xl font-syne font-extrabold text-base bg-gradient-to-r from-emerald-500 via-[#4f8ef7] to-[#7c3aed] text-white hover:opacity-95 transition-all transform hover:-translate-y-0.5 shadow-xl shadow-blue-500/20 flex items-center justify-center gap-2">
+                                <i class="fas fa-lock text-sm"></i>
+                                <span id="payBtnLabel">Pay R35.00 Now</span>
+                            </button>
+
+                            <div class="flex items-center justify-center space-x-4 mt-4 text-[11px] text-gray-500">
+                                <span class="flex items-center gap-1"><i class="fas fa-shield-alt text-emerald-400"></i> Instant Clearance</span>
+                                <span>•</span>
+                                <span>Zero Gateway Lag</span>
+                                <span>•</span>
+                                <span>Automated Barrier Pass</span>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- PAYMENT SUCCESS CONFIRMATION VIEW (Smoothly Shown On Click) -->
+        <div id="confirmationView" class="hidden fade-in max-w-2xl mx-auto">
+            <div id="printableReceipt" class="bg-[#161a22] border border-emerald-500/40 rounded-3xl p-8 sm:p-10 shadow-2xl relative overflow-hidden">
+                
+                <!-- Glowing Aura -->
+                <div class="absolute top-0 left-1/2 -translate-x-1/2 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none"></div>
+
+                <!-- Animated Success Icon -->
+                <div class="w-20 h-20 rounded-full bg-emerald-500/20 border-2 border-emerald-400 flex items-center justify-center mx-auto mb-6 text-emerald-400 text-3xl shadow-[0_0_30px_rgba(52,211,153,0.3)] animate-success-icon">
+                    <i class="fas fa-check"></i>
+                </div>
+
+                <div class="text-center mb-8">
+                    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 mb-2">
+                        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                        PAYMENT CONFIRMED • EXIT AUTHORIZED
+                    </span>
+                    <h2 class="text-2xl sm:text-3xl font-extrabold text-white font-syne">Payment Successful!</h2>
+                    <p class="text-gray-300 text-sm mt-1">
+                        Your parking transaction has been processed. The exit gate barrier is now unlocked.
+                    </p>
+                </div>
+
+                <!-- Receipt Card Details -->
+                <div class="bg-[#0d0f14] border border-[#2a3040] rounded-2xl p-6 mb-6 space-y-3 text-sm">
+                    <div class="flex justify-between items-center border-b border-[#2a3040] pb-3">
+                        <span class="text-gray-400">Transaction Reference</span>
+                        <div class="flex items-center gap-2">
+                            <span class="font-mono font-bold text-white text-xs sm:text-sm" id="receiptTxnId">TXN-AI-2026-9842</span>
+                            <button type="button" onclick="copyTxnReference()" class="text-xs text-gray-400 hover:text-[#4f8ef7] p-1 rounded transition" title="Copy Reference ID">
+                                <i class="fas fa-copy"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="flex justify-between border-b border-[#2a3040] pb-3">
+                        <span class="text-gray-400">Vehicle Registration</span>
+                        <span class="font-mono font-bold text-yellow-400" id="receiptPlateDisplay">GP 619 HHH</span>
+                    </div>
+                    <div class="flex justify-between border-b border-[#2a3040] pb-3">
+                        <span class="text-gray-400">Amount Paid</span>
+                        <span class="font-mono font-bold text-emerald-400 text-base" id="receiptAmountPaid">R35.00</span>
+                    </div>
+                    <div class="flex justify-between border-b border-[#2a3040] pb-3">
+                        <span class="text-gray-400">Payment Channel</span>
+                        <span class="font-medium text-white" id="receiptMethodUsed">Credit Card (Simulated)</span>
+                    </div>
+                    <div class="flex justify-between border-b border-[#2a3040] pb-3">
+                        <span class="text-gray-400">Timestamp</span>
+                        <span class="font-mono text-gray-300" id="receiptTimestamp">--:--</span>
+                    </div>
+                    <div class="flex justify-between items-center pt-1">
+                        <span class="text-gray-400 font-semibold">Exit Authorization Window</span>
+                        <span class="px-2.5 py-1 rounded-lg bg-emerald-500/15 text-emerald-400 font-bold font-mono text-xs">
+                            <i class="fas fa-clock mr-1"></i>15 Mins Free Exit
+                        </span>
+                    </div>
+                </div>
+
+                <!-- QR Barrier Pass Simulation -->
+                <div class="bg-[#1f2430] border border-[#2a3040] rounded-xl p-4 mb-8 flex items-center justify-between">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-12 h-12 bg-white p-1 rounded-lg flex items-center justify-center text-black text-2xl">
+                            <i class="fas fa-qrcode"></i>
+                        </div>
+                        <div>
+                            <span class="text-xs font-bold text-white block">Digital Boom Barrier Pass</span>
+                            <span class="text-[11px] text-gray-400">Show to scanner or drive forward for ANPR</span>
+                        </div>
+                    </div>
+                    <span class="text-emerald-400 text-xs font-mono font-bold uppercase bg-emerald-500/10 px-2 py-1 rounded border border-emerald-500/20">
+                        OPEN
+                    </span>
+                </div>
+
+                <!-- Actions: Return to Dashboard, Print, Home -->
+                <div class="flex flex-col sm:flex-row gap-3 pt-2">
+                    <a href="customer-portal.html" class="flex-1 py-3 px-5 rounded-xl font-syne font-bold text-sm bg-gradient-to-r from-[#4f8ef7] to-[#7c3aed] text-white hover:opacity-95 transition text-center flex items-center justify-center gap-2">
+                        <i class="fas fa-th-large"></i> Return to Portal
+                    </a>
+
+                    <button type="button" onclick="window.print()" class="py-3 px-5 rounded-xl font-semibold text-sm bg-[#1f2430] border border-[#2a3040] text-gray-200 hover:text-white hover:border-gray-500 transition flex items-center justify-center gap-2">
+                        <i class="fas fa-print"></i> Print Receipt
+                    </button>
+
+                    <button type="button" onclick="resetCheckout()" class="py-3 px-5 rounded-xl font-semibold text-sm bg-[#161a22] border border-[#2a3040] text-gray-400 hover:text-white transition flex items-center justify-center gap-2">
+                        <i class="fas fa-redo"></i> New Test
+                    </button>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Inline Plate Editor Modal -->
+        <div id="plateEditModal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+            <div class="bg-[#161a22] border border-[#2a3040] rounded-2xl max-w-sm w-full p-6 shadow-2xl modal-spring">
+                <h3 class="text-base font-bold text-white mb-1 font-syne flex items-center gap-2">
+                    <i class="fas fa-car text-[#4f8ef7]"></i> Change Target Plate
+                </h3>
+                <p class="text-xs text-gray-400 mb-4">Enter the vehicle license plate to settle parking for.</p>
+                <input type="text" id="modalPlateInput" class="w-full bg-[#0d0f14] border border-[#2a3040] rounded-xl px-4 py-3 text-white font-mono font-bold uppercase focus:border-[#4f8ef7] focus:ring-2 focus:ring-[#4f8ef7]/20 focus:outline-none mb-4 text-center tracking-wider text-base" placeholder="e.g. ABC 123 GP">
+                <div class="flex gap-2.5">
+                    <button type="button" onclick="closePlateModal()" class="flex-1 py-2.5 px-3 bg-[#1f2430] hover:bg-[#2a3040] text-gray-300 rounded-xl text-xs font-semibold transition">Cancel</button>
+                    <button type="button" onclick="savePlateModal()" class="flex-1 py-2.5 px-3 bg-gradient-to-r from-[#4f8ef7] to-[#7c3aed] text-white rounded-xl text-xs font-bold transition hover:opacity-95">Update Plate</button>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- CLIENT LOGIC FOR CHECKOUT & INSTANT SUCCESS -->
+    <script>
+        let currentMethod = 'card';
+        let currentAmount = 35.00;
+        let currentPlate = 'GP 619 HHH';
+        let currentHours = 2;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            initCheckoutParams();
+            setupCardFormatting();
+        });
+
+        function setupCardFormatting() {
+            const cardInput = document.getElementById('cardNumberInput');
+            const expiryInput = document.getElementById('cardExpiryInput');
+
+            if (cardInput) {
+                cardInput.addEventListener('input', (e) => {
+                    let val = e.target.value.replace(/\D/g, '').substring(0, 16);
+                    let formatted = val.match(/.{1,4}/g)?.join(' ') || val;
+                    e.target.value = formatted;
+                });
+            }
+
+            if (expiryInput) {
+                expiryInput.addEventListener('input', (e) => {
+                    let val = e.target.value.replace(/\D/g, '').substring(0, 4);
+                    if (val.length >= 2) {
+                        e.target.value = val.substring(0, 2) + '/' + val.substring(2);
+                    } else {
+                        e.target.value = val;
+                    }
+                });
+            }
+        }
+
+        // 1. Read URL Query Parameters or LocalStorage to customize checkout
+        function initCheckoutParams() {
+            const params = new URLSearchParams(window.location.search);
+            
+            // Check amount
+            if (params.get('amount')) {
+                const parsed = parseFloat(params.get('amount'));
+                if (!isNaN(parsed) && parsed > 0) currentAmount = parsed;
+            }
+
+            // Check hours
+            if (params.get('hours')) {
+                const parsedHours = parseInt(params.get('hours'), 10);
+                if (!isNaN(parsedHours)) currentHours = parsedHours;
+            }
+
+            // Check plate from URL or saved user in localStorage
+            if (params.get('plate')) {
+                currentPlate = params.get('plate').toUpperCase();
+            } else {
+                try {
+                    const savedUser = JSON.parse(localStorage.getItem('user'));
+                    if (savedUser && savedUser.carRegistration) {
+                        currentPlate = savedUser.carRegistration;
+                    }
+                } catch (e) {}
+            }
+
+            updateDisplays();
+        }
+
+        function updateDisplays() {
+            const formattedAmount = `R${currentAmount.toFixed(2)}`;
+
+            const summaryPlate = document.getElementById('summaryPlateDisplay');
+            if (summaryPlate) summaryPlate.textContent = currentPlate;
+
+            const summaryTotal = document.getElementById('summaryTotalAmount');
+            if (summaryTotal) summaryTotal.textContent = formattedAmount;
+
+            const summaryDuration = document.getElementById('summaryDuration');
+            if (summaryDuration) summaryDuration.textContent = `${currentHours} Hour${currentHours > 1 ? 's' : ''}`;
+
+            const baseTariff = document.getElementById('summaryBaseTariff');
+            if (baseTariff) baseTariff.textContent = `R${Math.max(0, currentAmount - 5).toFixed(2)}`;
+
+            const payLabel = document.getElementById('payBtnLabel');
+            if (payLabel) payLabel.textContent = `Pay ${formattedAmount} Now`;
+        }
+
+        // 2. Switch Payment Channels
+        function switchMethod(method) {
+            currentMethod = method;
+
+            // Reset tabs
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.className = 'tab-btn border border-[#2a3040] bg-[#0d0f14] text-gray-400 rounded-xl p-3 text-center transition flex flex-col items-center justify-center gap-1.5 hover:border-gray-500';
+            });
+            const activeTab = document.getElementById(`tab-${method}`);
+            if (activeTab) {
+                activeTab.className = 'tab-btn tab-active border border-[#2a3040] rounded-xl p-3 text-center transition flex flex-col items-center justify-center gap-1.5';
+            }
+
+            // Show/hide panels
+            document.querySelectorAll('.method-panel').forEach(panel => panel.classList.add('hidden'));
+            const activePanel = document.getElementById(`method-${method}`);
+            if (activePanel) activePanel.classList.remove('hidden');
+
+            const payBtnContainer = document.getElementById('payNowBtn')?.parentElement;
+            const payLabel = document.getElementById('payBtnLabel');
+
+            if (method === 'qr') {
+                if (payBtnContainer) payBtnContainer.classList.add('hidden');
+                loadPaymentQrCode();
+            } else {
+                stopPayQrPolling();
+                if (payBtnContainer) payBtnContainer.classList.remove('hidden');
+
+                if (payLabel) {
+                    if (method === 'apple') {
+                        payLabel.textContent = `Pay with Apple Pay (R${currentAmount.toFixed(2)})`;
+                    } else if (method === 'capitec') {
+                        payLabel.textContent = `Authorize Capitec Pay (R${currentAmount.toFixed(2)})`;
+                    } else {
+                        payLabel.textContent = `Pay R${currentAmount.toFixed(2)} Now`;
+                    }
+                }
+            }
+        }
+
+        function promptEditPlate() {
+            openPlateModal();
+        }
+
+        function openPlateModal() {
+            const modal = document.getElementById('plateEditModal');
+            const input = document.getElementById('modalPlateInput');
+            if (input) input.value = currentPlate;
+            if (modal) modal.classList.remove('hidden');
+            if (input) input.focus();
+        }
+
+        function closePlateModal() {
+            const modal = document.getElementById('plateEditModal');
+            if (modal) modal.classList.add('hidden');
+        }
+
+        function savePlateModal() {
+            const input = document.getElementById('modalPlateInput');
+            if (!input) return;
+            const newPlate = input.value.trim().toUpperCase();
+            if (!newPlate) {
+                if (typeof showToast === 'function') showToast('Please enter a valid license plate.', 'warning');
+                return;
+            }
+            currentPlate = newPlate;
+            updateDisplays();
+            closePlateModal();
+            if (typeof showToast === 'function') showToast(`License plate updated to ${currentPlate}`, 'success');
+            if (currentMethod === 'qr') loadPaymentQrCode();
+        }
+
+        function copyTxnReference() {
+            const el = document.getElementById('receiptTxnId');
+            if (!el) return;
+            const text = el.textContent.trim();
+            navigator.clipboard.writeText(text).then(() => {
+                if (typeof showToast === 'function') {
+                    showToast('Transaction reference copied to clipboard!', 'success');
+                }
+            }).catch(() => {
+                if (typeof showToast === 'function') {
+                    showToast('Reference: ' + text, 'info');
+                }
+            });
+        }
+
+        // ====================================================================
+        // DYNAMIC QR CODE PAYMENT LIFECYCLE & POLLING
+        // ====================================================================
+        let payQrPollInterval = null;
+        let payQrCountdownInterval = null;
+        let activePayQrSessionId = null;
+        let activePayQrToken = null;
+
+        function stopPayQrPolling() {
+            if (payQrPollInterval) clearInterval(payQrPollInterval);
+            if (payQrCountdownInterval) clearInterval(payQrCountdownInterval);
+            payQrPollInterval = null;
+            payQrCountdownInterval = null;
+        }
+
+        async function loadPaymentQrCode() {
+            stopPayQrPolling();
+
+            const spinner = document.getElementById('payQrSpinner');
+            const qrImg = document.getElementById('payQrImage');
+            const expiredOverlay = document.getElementById('payQrExpiredOverlay');
+            const statusText = document.getElementById('payQrStatus');
+            const countdownEl = document.getElementById('payQrCountdown');
+            const dot = document.getElementById('payQrDot');
+
+            if (spinner) spinner.classList.remove('hidden');
+            if (qrImg) qrImg.classList.add('hidden');
+            if (expiredOverlay) expiredOverlay.classList.add('hidden');
+            if (statusText) statusText.textContent = 'Generating dynamic payment QR...';
+            if (countdownEl) {
+                countdownEl.textContent = '02:00';
+                countdownEl.className = 'font-mono font-bold text-amber-400';
+            }
+            if (dot) dot.className = 'w-2 h-2 rounded-full bg-emerald-400 animate-pulse';
+
+            try {
+                const res = await fetch('/api/qr/generate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        type: 'payment',
+                        metadata: {
+                            amount: currentAmount,
+                            plate: currentPlate,
+                            hours: currentHours
+                        },
+                        expiresInSeconds: 120
+                    })
+                });
+
+                const data = await res.json();
+                if (!res.ok || !data.success) throw new Error(data.message || 'QR creation failed');
+
+                activePayQrSessionId = data.sessionId;
+                activePayQrToken = data.token;
+
+                if (spinner) spinner.classList.add('hidden');
+                if (qrImg) {
+                    qrImg.src = data.qrCodeDataUrl;
+                    qrImg.classList.remove('hidden');
+                }
+                if (statusText) statusText.textContent = 'Listening for mobile scan...';
+
+                // Countdown
+                let timeLeft = data.expiresInSeconds || 120;
+                payQrCountdownInterval = setInterval(() => {
+                    timeLeft--;
+                    const mins = Math.floor(timeLeft / 60);
+                    const secs = timeLeft % 60;
+                    if (countdownEl) {
+                        countdownEl.textContent = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+                        if (timeLeft <= 30) {
+                            countdownEl.className = 'font-mono font-bold text-red-500 animate-pulse';
+                        }
+                    }
+                    if (timeLeft <= 0) {
+                        stopPayQrPolling();
+                        if (expiredOverlay) expiredOverlay.classList.remove('hidden');
+                        if (statusText) statusText.textContent = 'Payment QR expired';
+                        if (dot) dot.className = 'w-2 h-2 rounded-full bg-red-500';
+                    }
+                }, 1000);
+
+                // Polling loop (every 1.5s)
+                payQrPollInterval = setInterval(async () => {
+                    if (!activePayQrSessionId) return;
+
+                    try {
+                        const pollRes = await fetch(`/api/qr/status/${activePayQrSessionId}`);
+                        const pollData = await pollRes.json();
+
+                        if (pollData.status === 'scanned') {
+                            if (statusText) statusText.textContent = 'Scanner connected! Settling...';
+                            if (dot) dot.className = 'w-2 h-2 rounded-full bg-amber-400 animate-ping';
+                        } else if (pollData.status === 'completed' && pollData.receipt) {
+                            stopPayQrPolling();
+                            displayConfirmationReceipt(pollData.receipt);
+                        } else if (pollData.status === 'expired') {
+                            stopPayQrPolling();
+                            if (expiredOverlay) expiredOverlay.classList.remove('hidden');
+                            if (statusText) statusText.textContent = 'Payment QR expired';
+                        }
+                    } catch (e) {}
+                }, 1500);
+
+            } catch (err) {
+                console.error('[PAY QR ERROR]', err);
+                if (statusText) statusText.textContent = 'Failed to load QR';
+            }
+        }
+
+        async function simulateMobilePaymentScan() {
+            if (!activePayQrToken) return;
+
+            const btn = document.getElementById('simulatePayScanBtn');
+            const originalText = btn ? btn.innerHTML : 'Simulate';
+
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Authorizing Settlement...';
+            }
+
+            try {
+                const res = await fetch('/api/qr/verify-payment', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        token: activePayQrToken,
+                        paymentMethod: 'Banking App Scan'
+                    })
+                });
+
+                const data = await res.json();
+                console.log('[QR PAYMENT SIMULATOR] Response:', data);
+            } catch (e) {
+                console.error('[QR PAYMENT SIMULATOR ERROR]', e);
+            } finally {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = originalText;
+                }
+            }
+        }
+
+        function displayConfirmationReceipt(receipt) {
+            stopPayQrPolling();
+
+            document.getElementById('receiptTxnId').textContent = receipt.transactionId || `TXN-AI-2026-${Math.floor(100000 + Math.random() * 900000)}`;
+            document.getElementById('receiptPlateDisplay').textContent = receipt.plate || currentPlate;
+            document.getElementById('receiptAmountPaid').textContent = `R${parseFloat(receipt.amount || currentAmount).toFixed(2)}`;
+            document.getElementById('receiptMethodUsed').textContent = receipt.paymentMethod || 'Dynamic QR Pay (Approved)';
+            document.getElementById('receiptTimestamp').textContent = new Date(receipt.timestamp || Date.now()).toLocaleString();
+
+            document.getElementById('checkoutView').classList.add('hidden');
+            document.getElementById('confirmationView').classList.remove('hidden');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // ====================================================================
+        // STANDARD SIMULATED PAYMENT EXECUTION
+        // ====================================================================
+        function executeSimulatedPayment() {
+            const payBtn = document.getElementById('payNowBtn');
+            const originalContent = payBtn.innerHTML;
+
+            payBtn.disabled = true;
+
+            // Stage 1: Encrypting
+            payBtn.innerHTML = '<i class="fas fa-lock animate-spin text-sm mr-2 text-blue-300"></i><span>Encrypting Transaction...</span>';
+
+            setTimeout(() => {
+                // Stage 2: Authorizing Boom Barrier
+                payBtn.innerHTML = '<i class="fas fa-shield-alt animate-pulse text-sm mr-2 text-emerald-300"></i><span>Authorizing Barrier Release...</span>';
+
+                setTimeout(() => {
+                    // Stage 3: Payment Approved
+                    payBtn.innerHTML = '<i class="fas fa-check-circle text-sm mr-2 text-emerald-400"></i><span>Payment Approved!</span>';
+
+                    setTimeout(() => {
+                        const randomTxnSuffix = Math.floor(100000 + Math.random() * 900000);
+                        const txnId = `TXN-AI-2026-${randomTxnSuffix}`;
+                        const now = new Date();
+
+                        const methodNames = {
+                            card: 'Credit/Debit Card (Simulated)',
+                            capitec: 'Capitec Pay (Instant EFT)',
+                            apple: 'Apple Pay (Biometric Touch)',
+                            qr: 'Dynamic QR Pay (Banking App)'
+                        };
+
+                        displayConfirmationReceipt({
+                            transactionId: txnId,
+                            plate: currentPlate,
+                            amount: currentAmount,
+                            paymentMethod: methodNames[currentMethod] || 'Digital Payment',
+                            timestamp: now.toISOString()
+                        });
+
+                        payBtn.disabled = false;
+                        payBtn.innerHTML = originalContent;
+                    }, 400);
+                }, 450);
+            }, 450);
+        }
+
+        function resetCheckout() {
+            document.getElementById('confirmationView').classList.add('hidden');
+            document.getElementById('checkoutView').classList.remove('hidden');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            if (currentMethod === 'qr') loadPaymentQrCode();
+        }
+    </script>
+    <script src="toast.js"></script>
+</body>
+</html>
